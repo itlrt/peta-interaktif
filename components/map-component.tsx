@@ -1,12 +1,11 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { MapContainer, TileLayer, Marker, Popup, useMap, Circle } from "react-leaflet"
+import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import Sidebar from "./sidebar"
-import DestinationSidebar from "./destination-sidebar"
-import { MapPin, Train } from "lucide-react"
+import { MapPin, Train, Navigation } from "lucide-react"
 import { renderToString } from "react-dom/server"
 
 // Fix for default marker icons in Leaflet with Next.js
@@ -35,6 +34,9 @@ const DestinationIcon = L.divIcon({
 interface Destination {
   name: string
   position: [number, number]
+  distance?: number // jarak dalam meter
+  duration?: number // durasi dalam detik
+  image?: string // URL gambar destinasi
 }
 
 // Type for station data
@@ -58,10 +60,22 @@ export const stations: Station[] = [
     location: "Jakarta Pusat",
     image: "/placeholder.svg?height=80&width=80",
     destinations: [
-      { name: "Taman Menteng Dukuh Atas", position: [-6.196270033723199, 106.82936424054809] },
+      { 
+        name: "Taman Menteng Dukuh Atas", 
+        position: [-6.196270033723199, 106.82936424054809],
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Taman_Menteng.JPG/640px-Taman_Menteng.JPG"
+      },
       { name: "Grha BNI", position: [-6.203251371497656, 106.82132904054815] },
-      { name: "Grand Indonesia", position: [-6.1949099877325455, 106.82111740905012] },
-      { name: "MRT Dukuh Atas", position: [-6.201275304534395, 106.82251849580109] },
+      { 
+        name: "Grand Indonesia", 
+        position: [-6.1949099877325455, 106.82111740905012],
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Grand_Indonesia_Shopping_Town%2C_Jakarta.jpg/640px-Grand_Indonesia_Shopping_Town%2C_Jakarta.jpg"
+      },
+      { 
+        name: "MRT Dukuh Atas", 
+        position: [-6.201275304534395, 106.82251849580109],
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/MRT_Jakarta_Dukuh_Atas_BNI_Station.jpg/640px-MRT_Jakarta_Dukuh_Atas_BNI_Station.jpg"
+      },
       { name: "KRL Sudirman", position: [-6.202636553988454, 106.82500627960421] },
       { name: "BNI City", position: [-6.201456452119922, 106.8212522193132] },
       { name: "Waduk Setiabudi", position: [-6.203983905635702, 106.82641393993572] },
@@ -267,7 +281,11 @@ export const stations: Station[] = [
       { name: "RS Meuraksa", position: [-6.294243008997178, 106.88232786417683] },
       { name: "Shuttle Stasiun", position: [-6.302187983621508, 106.88424121581924] },
       { name: "Tamini Square", position: [-6.291028685956752, 106.88215234637043] },
-      { name: "Taman Rekreasi TMII", position: [-6.301985273640397, 106.88988166753474] },
+      { 
+        name: "Taman Rekreasi TMII", 
+        position: [-6.301985273640397, 106.88988166753474],
+        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Taman_Mini_Indonesia_Indah_Aerial.jpg/640px-Taman_Mini_Indonesia_Indah_Aerial.jpg"
+      },
       { name: "Terminal Pinang Ranti", position: [-6.29008400188741, 106.88091230715386] },
     ],
   },
@@ -347,10 +365,8 @@ function FitBounds() {
 // Custom Popup component
 const StationPopup = ({
   station,
-  onShowDestinations,
 }: {
   station: Station
-  onShowDestinations: (stationId: number) => void
 }) => {
   return (
     <div className="min-w-[280px]">
@@ -372,17 +388,18 @@ const StationPopup = ({
           </div>
           <h3 className="font-bold text-base leading-tight">STASIUN {station.name.toUpperCase()}</h3>
           <p className="text-xs text-gray-600">{station.location}</p>
-
-          <button
-            onClick={() => onShowDestinations(station.id)}
-            className="mt-2 bg-red-600 hover:bg-red-700 text-white text-xs py-1 px-2 rounded-md transition-colors"
-          >
-            Lihat Destinasi Terdekat
-          </button>
         </div>
       </div>
     </div>
   )
+}
+
+// Format duration in minutes and seconds
+const formatDuration = (seconds?: number): string => {
+  if (!seconds) return "-"
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = Math.floor(seconds % 60)
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`
 }
 
 // Component to handle marker references and popup control
@@ -390,13 +407,11 @@ function MarkerManager({
   stations,
   selectedStationId,
   showDestinations,
-  onShowDestinations,
   selectedDestinationPosition,
 }: {
   stations: Station[]
   selectedStationId: number | null
   showDestinations: number | null
-  onShowDestinations: (stationId: number) => void
   selectedDestinationPosition: [number, number] | null
 }) {
   const map = useMap()
@@ -445,7 +460,7 @@ function MarkerManager({
           }}
         >
           <Popup>
-            <StationPopup station={station} onShowDestinations={onShowDestinations} />
+            <StationPopup station={station} />
           </Popup>
         </Marker>
       ))}
@@ -464,27 +479,19 @@ function MarkerManager({
           }}
         >
           <Popup>
-            <div className="p-1 text-center">
-              <h3 className="font-semibold text-xs">{destination.name}</h3>
-              <p className="text-xs text-gray-600">Stasiun {selectedStation.name}</p>
+            <div className="p-2 text-center min-w-[200px]">
+              <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
+                <img
+                  src={destination.image || "/placeholder.svg?height=96&width=200"}
+                  alt={`Gambar ${destination.name}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <h3 className="font-semibold text-sm">{destination.name}</h3>
             </div>
           </Popup>
         </Marker>
       ))}
-
-      {/* Add a circle around the selected station */}
-      {selectedStation && (
-        <Circle
-          center={selectedStation.position}
-          radius={1000} // 1km radius
-          pathOptions={{
-            fillColor: "rgba(255, 0, 0, 0.1)",
-            fillOpacity: 0.2,
-            color: "red",
-            weight: 1,
-          }}
-        />
-      )}
     </>
   )
 }
@@ -504,6 +511,650 @@ function MapActions({
   return null
 }
 
+// Component to handle routing between two points
+function RoutingControl({
+  startPoint,
+  endPoint,
+  transportMode,
+  onRouteCalculated,
+}: {
+  startPoint: [number, number] | null
+  endPoint: [number, number] | null
+  transportMode: "pedestrian" | "auto" | "motorcycle"
+  onRouteCalculated?: (distance: number, duration: number) => void
+}) {
+  const map = useMap()
+  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>([])
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null)
+  const prevRouteRef = useRef<[number, number][]>([])
+  const prevStartPointRef = useRef<[number, number] | null>(null)
+  const prevEndPointRef = useRef<[number, number] | null>(null)
+  const prevTransportModeRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    // Jika titik awal, akhir, dan mode transportasi sama dengan sebelumnya, tidak perlu memuat ulang rute
+    if (
+      startPoint && 
+      endPoint && 
+      prevStartPointRef.current && 
+      prevEndPointRef.current &&
+      startPoint[0] === prevStartPointRef.current[0] &&
+      startPoint[1] === prevStartPointRef.current[1] &&
+      endPoint[0] === prevEndPointRef.current[0] &&
+      endPoint[1] === prevEndPointRef.current[1] &&
+      transportMode === prevTransportModeRef.current
+    ) {
+      return;
+    }
+
+    // Simpan titik awal, akhir, dan mode transportasi saat ini untuk perbandingan berikutnya
+    prevStartPointRef.current = startPoint;
+    prevEndPointRef.current = endPoint;
+    prevTransportModeRef.current = transportMode;
+
+    async function getRoute() {
+      if (!startPoint || !endPoint) {
+        // Jangan langsung menghapus rute jika tidak ada titik
+        if (!startPoint && !endPoint) {
+          setRouteCoordinates([])
+          setRouteInfo(null)
+        }
+        return
+      }
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        // Format coordinates for Valhalla API
+        const startLon = startPoint[1]
+        const startLat = startPoint[0]
+        const endLon = endPoint[1]
+        const endLat = endPoint[0]
+
+        // Valhalla API URL (menggunakan server publik)
+        const url = `https://valhalla1.openstreetmap.de/route?json={"locations":[{"lat":${startLat},"lon":${startLon}},{"lat":${endLat},"lon":${endLon}}],"costing":"${transportMode}","directions_options":{"language":"id"}}`
+
+        const response = await fetch(url)
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching route: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        
+        if (data.trip && data.trip.legs && data.trip.legs.length > 0) {
+          // Extract coordinates from the response
+          const shape = data.trip.legs[0].shape
+          const decodedShape = decodePolyline(shape)
+          
+          // Simpan rute sebelumnya
+          prevRouteRef.current = routeCoordinates;
+          
+          // Update rute baru
+          setRouteCoordinates(decodedShape)
+          
+          // Extract distance and duration
+          const distance = data.trip.legs[0].summary.length * 1000 // convert to meters
+          const duration = data.trip.legs[0].summary.time // in seconds
+          
+          setRouteInfo({ distance, duration })
+          
+          // Call the callback if provided
+          if (onRouteCalculated) {
+            onRouteCalculated(distance, duration)
+          }
+        } else {
+          throw new Error('No route found')
+        }
+      } catch (err) {
+        console.error('Error getting route:', err)
+        setError(err instanceof Error ? err.message : 'Unknown error')
+        // Jangan langsung menghapus rute jika terjadi error
+        // setRouteCoordinates([])
+        // setRouteInfo(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    // Gunakan timeout untuk menghindari terlalu banyak permintaan API
+    const timeoutId = setTimeout(() => {
+      getRoute()
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [startPoint, endPoint, transportMode, map, onRouteCalculated])
+
+  // Function to decode polyline from Valhalla
+  function decodePolyline(encoded: string): [number, number][] {
+    // This is a simplified version of the polyline decoding algorithm
+    // For a full implementation, consider using a library like @mapbox/polyline
+    const points: [number, number][] = []
+    let index = 0
+    let lat = 0
+    let lng = 0
+
+    while (index < encoded.length) {
+      let b
+      let shift = 0
+      let result = 0
+
+      do {
+        b = encoded.charCodeAt(index++) - 63
+        result |= (b & 0x1f) << shift
+        shift += 5
+      } while (b >= 0x20)
+
+      const dlat = ((result & 1) ? ~(result >> 1) : (result >> 1))
+      lat += dlat
+
+      shift = 0
+      result = 0
+
+      do {
+        b = encoded.charCodeAt(index++) - 63
+        result |= (b & 0x1f) << shift
+        shift += 5
+      } while (b >= 0x20)
+
+      const dlng = ((result & 1) ? ~(result >> 1) : (result >> 1))
+      lng += dlng
+
+      points.push([lat / 1e6, lng / 1e6])
+    }
+
+    return points
+  }
+
+  // Tampilkan rute yang ada jika sedang loading
+  const displayCoordinates = isLoading && prevRouteRef.current.length > 0 
+    ? prevRouteRef.current 
+    : routeCoordinates;
+
+  // Warna rute default biru untuk semua mode transportasi
+  const routeColor = "#0078FF";
+
+  if (isLoading && !prevRouteRef.current.length) {
+    return (
+      <div className="absolute top-4 right-4 bg-white p-2 rounded shadow z-50">
+        <p>Mencari rute...</p>
+      </div>
+    )
+  }
+
+  if (error && !displayCoordinates.length) {
+    return (
+      <div className="absolute top-4 right-4 bg-white p-2 rounded shadow z-50 text-red-500">
+        <p>Error: {error}</p>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {displayCoordinates.length > 0 && (
+        <Polyline
+          positions={displayCoordinates}
+          color={routeColor}
+          weight={5}
+          opacity={0.7}
+          className="route-line"
+        />
+      )}
+      
+      {(routeInfo || isLoading) && (
+        <div className="absolute top-4 right-4 bg-white p-2 rounded shadow z-50 transition-opacity duration-300">
+          {isLoading ? (
+            <p className="text-sm font-medium">Memperbarui rute...</p>
+          ) : (
+            <p className="text-sm font-medium">
+              Jarak: {Math.round(routeInfo!.distance)}m. Waktu: {formatDuration(routeInfo!.duration)}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  )
+}
+
+// Component to handle destination sidebar
+function DestinationSidebar({
+  stationName,
+  stationLocation,
+  destinations,
+  onDestinationSelect,
+  isOpen,
+  onToggle,
+  stationPosition,
+  routeInfo,
+  routeStartPoint,
+  routeEndPoint,
+  onResetRoute,
+  transportMode,
+  onTransportModeChange,
+  formatDuration,
+}: {
+  stationName: string
+  stationLocation: string
+  destinations: Destination[]
+  onDestinationSelect: (position: L.LatLngExpression) => void
+  isOpen: boolean
+  onToggle: () => void
+  stationPosition: [number, number]
+  routeInfo: { distance: number; duration: number } | null
+  routeStartPoint: [number, number] | null
+  routeEndPoint: [number, number] | null
+  onResetRoute: () => void
+  transportMode: "pedestrian" | "auto" | "motorcycle"
+  onTransportModeChange: (mode: "pedestrian" | "auto" | "motorcycle") => void
+  formatDuration: (seconds?: number) => string
+}) {
+  // Inisialisasi state dengan array kosong untuk menghindari masalah referensi
+  const [destinationsWithRoute, setDestinationsWithRoute] = useState<Destination[]>([])
+  const [isCalculating, setIsCalculating] = useState(true)
+  const [retryCount, setRetryCount] = useState(0)
+  const maxRetries = 5
+  const [processingDestinations, setProcessingDestinations] = useState<boolean[]>([])
+  const [currentStationPosition, setCurrentStationPosition] = useState<[number, number] | null>(null)
+  const calculationRef = useRef<boolean>(true)
+  
+  // Reset state ketika destinasi berubah (stasiun baru dipilih)
+  // Ini penting untuk memastikan destinasi terdekat diperbarui dengan benar
+  useEffect(() => {
+    console.log("Destinations changed, resetting state", destinations.length)
+    setDestinationsWithRoute([...destinations])
+    setProcessingDestinations(new Array(destinations.length).fill(false))
+    setIsCalculating(true)
+    setRetryCount(0)
+    setCurrentStationPosition(stationPosition)
+    calculationRef.current = true
+  }, [destinations])
+  
+  useEffect(() => {
+    // Jika posisi stasiun berubah, batalkan perhitungan yang sedang berjalan
+    if (currentStationPosition && 
+        (currentStationPosition[0] !== stationPosition[0] || 
+         currentStationPosition[1] !== stationPosition[1])) {
+      console.log("Stasiun berubah, menghentikan perhitungan sebelumnya")
+      calculationRef.current = false
+      return
+    }
+    
+    // Inisialisasi array status pemrosesan
+    if (processingDestinations.length === 0 && destinations.length > 0) {
+      setProcessingDestinations(new Array(destinations.length).fill(false))
+    }
+    
+    // Set flag perhitungan aktif
+    calculationRef.current = true
+    
+    async function calculateRoutes() {
+      setIsCalculating(true)
+      const updatedDestinations = [...destinationsWithRoute.length > 0 ? destinationsWithRoute : destinations]
+      const updatedProcessing = [...processingDestinations]
+      let failedDestinations = 0
+      let pendingDestinations = 0
+      
+      for (let i = 0; i < updatedDestinations.length; i++) {
+        // Periksa apakah perhitungan masih valid (stasiun belum berubah)
+        if (!calculationRef.current) {
+          console.log("Perhitungan dibatalkan karena stasiun berubah")
+          return
+        }
+        
+        const destination = updatedDestinations[i]
+        
+        // Lewati destinasi yang sudah memiliki data jarak dan waktu
+        if (destination.distance && destination.duration) {
+          updatedProcessing[i] = false
+          continue
+        }
+        
+        // Tandai destinasi ini sedang diproses
+        updatedProcessing[i] = true
+        pendingDestinations++
+        
+        try {
+          const startLat = stationPosition[0]
+          const startLon = stationPosition[1]
+          const endLat = destination.position[0]
+          const endLon = destination.position[1]
+          
+          const url = `https://valhalla1.openstreetmap.de/route?json={"locations":[{"lat":${startLat},"lon":${startLon}},{"lat":${endLat},"lon":${endLon}}],"costing":"${transportMode}","directions_options":{"language":"id"}}`
+          
+          const response = await fetch(url)
+          
+          // Periksa lagi apakah perhitungan masih valid setelah respons diterima
+          if (!calculationRef.current) {
+            console.log("Perhitungan dibatalkan setelah menerima respons API")
+            return
+          }
+          
+          if (response.ok) {
+            const data = await response.json()
+            if (data.trip && data.trip.legs && data.trip.legs.length > 0) {
+              updatedDestinations[i] = {
+                ...destination,
+                distance: data.trip.legs[0].summary.length * 1000, // convert to meters
+                duration: data.trip.legs[0].summary.time // in seconds
+              }
+              // Berhasil mendapatkan data, tandai sebagai selesai
+              updatedProcessing[i] = false
+            } else {
+              failedDestinations++
+            }
+          } else {
+            failedDestinations++
+          }
+        } catch (err) {
+          // Periksa apakah perhitungan masih valid setelah error
+          if (!calculationRef.current) return
+          
+          console.error(`Error calculating route for ${destination.name}:`, err)
+          failedDestinations++
+        }
+        
+        // Update state setelah setiap 2 destinasi atau di akhir loop
+        if ((i % 2 === 0 || i === updatedDestinations.length - 1) && calculationRef.current) {
+          setDestinationsWithRoute([...updatedDestinations])
+          setProcessingDestinations([...updatedProcessing])
+        }
+        
+        // Tambahkan jeda kecil antara permintaan untuk mengurangi beban server
+        if (i < updatedDestinations.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300))
+          // Periksa lagi setelah jeda
+          if (!calculationRef.current) return
+        }
+      }
+      
+      // Pastikan perhitungan masih valid sebelum menyelesaikan
+      if (!calculationRef.current) return
+      
+      // Sort destinations by distance
+      const sortedDestinations = [...updatedDestinations].sort((a, b) => {
+        const distA = a.distance || Infinity
+        const distB = b.distance || Infinity
+        return distA - distB
+      })
+      
+      setDestinationsWithRoute(sortedDestinations)
+      setIsCalculating(false)
+      
+      // Jika masih ada destinasi yang gagal dan belum mencapai batas percobaan ulang
+      if (failedDestinations > 0 && retryCount < maxRetries && calculationRef.current) {
+        console.log(`${failedDestinations} destinasi gagal mendapatkan data. Mencoba ulang (${retryCount + 1}/${maxRetries})...`)
+        setTimeout(() => {
+          if (calculationRef.current) {
+            setRetryCount(retryCount + 1)
+          }
+        }, 3000) // Tunggu 3 detik sebelum mencoba lagi
+      }
+    }
+    
+    calculateRoutes()
+    
+    // Cleanup function untuk membatalkan perhitungan saat komponen unmount
+    return () => {
+      calculationRef.current = false
+    }
+  }, [destinations, stationPosition, retryCount])
+
+  // Fungsi untuk mencoba ulang perhitungan rute secara manual
+  const handleRetryCalculation = () => {
+    setRetryCount(retryCount + 1)
+    setIsCalculating(true)
+    calculationRef.current = true
+  }
+
+  // Hitung jumlah destinasi yang belum memiliki data
+  const incompleteDestinations = destinationsWithRoute.filter(d => !d.distance || !d.duration).length
+
+  return (
+    <div
+      className={`bg-white h-full w-80 shadow-lg transition-all duration-300 overflow-hidden ${
+        isOpen ? "translate-x-0" : "translate-x-full"
+      }`}
+    >
+      <div className="p-4 border-b bg-gradient-to-r from-red-600 to-red-700">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Navigation className="h-5 w-5" />
+            Destinasi Terdekat
+          </h2>
+          <button
+            onClick={onToggle}
+            className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="mt-2 flex items-center bg-white/10 rounded-lg p-2">
+          <MapPin className="h-4 w-4 text-white mr-2" />
+          <div>
+            <p className="text-sm text-white font-medium">Stasiun {stationName}</p>
+            <p className="text-xs text-white/80">{stationLocation}</p>
+          </div>
+        </div>
+        
+        {/* Tampilkan status dan tombol refresh jika ada destinasi yang belum lengkap */}
+        {incompleteDestinations > 0 && !isCalculating && (
+          <div className="mt-2 flex items-center justify-between bg-white/10 rounded-lg p-2">
+            <p className="text-xs text-white">{incompleteDestinations} destinasi belum lengkap</p>
+            <button 
+              onClick={handleRetryCalculation}
+              className="text-xs bg-white text-red-600 px-2 py-1 rounded-full font-medium hover:bg-red-50 transition-colors"
+            >
+              Refresh Data
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="overflow-y-auto max-h-[calc(100%-4rem)]">
+        {/* Daftar destinasi terdekat */}
+        <div className="p-2">
+          {isCalculating && incompleteDestinations > 0 && (
+            <div className="text-center py-2 text-gray-500 bg-blue-50 mb-2 rounded">
+              <p>Menghitung {incompleteDestinations} rute{retryCount > 0 ? ` (percobaan ${retryCount + 1}/${maxRetries})` : ''}...</p>
+            </div>
+          )}
+          
+          {destinationsWithRoute.map((destination, index) => {
+            const isProcessing = processingDestinations[index]
+            const isIncomplete = !destination.distance || !destination.duration
+            const isSelected = routeEndPoint && 
+              routeEndPoint[0] === destination.position[0] && 
+              routeEndPoint[1] === destination.position[1]
+            
+            return (
+              <div
+                key={index}
+                className={`p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-all duration-200 ${
+                  isIncomplete ? (isProcessing ? 'bg-blue-50' : 'bg-amber-50/50') : ''
+                } ${isSelected ? 'bg-red-50 border-l-4 border-red-500 pl-2' : ''}`}
+                onClick={() => onDestinationSelect(destination.position)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                    {destination.image ? (
+                      <img 
+                        src={destination.image} 
+                        alt={destination.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-red-100">
+                        <MapPin size={20} className="text-red-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-medium text-sm">{destination.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      {isProcessing && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full inline-flex items-center">
+                          <svg className="animate-spin -ml-0.5 mr-1.5 h-2 w-2 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Memuat
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full inline-flex items-center">
+                          <svg className="h-2.5 w-2.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          Dipilih
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        
+        {/* Panel informasi rute di bagian bawah sidebar */}
+        {(routeStartPoint || routeEndPoint) && (
+          <div className="p-4 bg-gray-50 border-t border-gray-200 sticky bottom-0 shadow-inner">
+            <h3 className="font-bold text-lg mb-3 text-center">Rute Perjalanan</h3>
+            
+            {/* Mode transportasi selector dengan ikon */}
+            <div className="mb-4 flex justify-between gap-2">
+              <button 
+                onClick={() => onTransportModeChange("auto")}
+                className={`px-3 py-2 rounded-lg flex items-center justify-center shadow-md transition-all duration-200 flex-1 ${
+                  transportMode === "auto" 
+                    ? "bg-white border-2 border-red-500" 
+                    : "bg-red-600 hover:bg-red-700 text-white"
+                }`}
+              >
+                <img 
+                  src={transportMode === "auto" ? "/car-red.png" : "/car-white.png"} 
+                  alt="Mobil" 
+                  className="h-6 w-6" 
+                />
+              </button>
+              <button 
+                onClick={() => onTransportModeChange("pedestrian")}
+                className={`px-3 py-2 rounded-lg flex items-center justify-center shadow-md transition-all duration-200 flex-1 ${
+                  transportMode === "pedestrian" 
+                    ? "bg-white border-2 border-red-500" 
+                    : "bg-red-600 hover:bg-red-700 text-white"
+                }`}
+              >
+                <img 
+                  src={transportMode === "pedestrian" ? "/walking-red.png" : "/walking-white.png"} 
+                  alt="Jalan Kaki" 
+                  className="h-6 w-6" 
+                />
+              </button>
+              <button 
+                onClick={() => onTransportModeChange("motorcycle")}
+                className={`px-3 py-2 rounded-lg flex items-center justify-center shadow-md transition-all duration-200 flex-1 ${
+                  transportMode === "motorcycle" 
+                    ? "bg-white border-2 border-red-500" 
+                    : "bg-red-600 hover:bg-red-700 text-white"
+                }`}
+              >
+                <img 
+                  src={transportMode === "motorcycle" ? "/motorcycle-red.png" : "/motorcycle-white.png"} 
+                  alt="Motor" 
+                  className="h-6 w-6" 
+                />
+              </button>
+            </div>
+            
+            <div className="bg-white rounded-lg p-4 shadow-md mb-4">
+              {routeStartPoint ? (
+                <div className="flex items-start mb-3">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mr-3">
+                    <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Titik Awal</p>
+                    <p className="text-base font-semibold">Stasiun {stationName}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base mb-2 text-gray-400">Titik Awal: Belum dipilih</p>
+              )}
+              
+              {routeEndPoint ? (
+                <div className="flex items-start">
+                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mr-3">
+                    <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Titik Akhir</p>
+                    <p className="text-base font-semibold">{
+                      destinationsWithRoute.find(d => 
+                        d.position[0] === routeEndPoint[0] && 
+                        d.position[1] === routeEndPoint[1]
+                      )?.name || 'Destinasi'
+                    }</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-base mb-2 text-gray-400">Titik Akhir: Belum dipilih</p>
+              )}
+            </div>
+            
+            {routeInfo && (
+              <div className="bg-white rounded-lg p-4 shadow-md mb-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Jarak</p>
+                    <p className="text-xl font-bold">{Math.round(routeInfo.distance)}m</p>
+                  </div>
+                  <div className="h-10 w-px bg-gray-200"></div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-medium">Waktu</p>
+                    <p className="text-xl font-bold">{formatDuration(routeInfo.duration)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* <button 
+              onClick={() => {
+                onResetRoute();
+                // Setelah reset, perbarui UI untuk menunjukkan bahwa rute telah direset
+                setDestinationsWithRoute(prevState => {
+                  // Buat salinan array untuk memastikan React mendeteksi perubahan
+                  return [...prevState];
+                });
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg transition-colors w-full font-bold shadow-md hover:shadow-lg active:shadow-sm active:translate-y-0.5 transform transition-all"
+            >
+              RESET RUTE
+            </button> */}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function MapComponent() {
   const [isMounted, setIsMounted] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -511,6 +1162,10 @@ export default function MapComponent() {
   const [selectedStationId, setSelectedStationId] = useState<number | null>(null)
   const [showDestinations, setShowDestinations] = useState<number | null>(null)
   const [selectedDestinationPosition, setSelectedDestinationPosition] = useState<[number, number] | null>(null)
+  const [routeStartPoint, setRouteStartPoint] = useState<[number, number] | null>(null)
+  const [routeEndPoint, setRouteEndPoint] = useState<[number, number] | null>(null)
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null)
+  const [transportMode, setTransportMode] = useState<"pedestrian" | "auto" | "motorcycle">("pedestrian")
   const mapRef = useRef<L.Map | null>(null)
 
   useEffect(() => {
@@ -522,41 +1177,106 @@ export default function MapComponent() {
   }
 
   const handleStationSelect = (position: L.LatLngExpression, stationId: number) => {
+    // Jika memilih stasiun yang sama, tidak perlu melakukan apa-apa
+    if (selectedStationId === stationId) {
+      console.log("Same station selected, no action needed");
+      return
+    }
+    
+    console.log("New station selected:", stationId, "at position:", position);
+    
+    // Reset rute sepenuhnya saat memilih stasiun baru
+    // Untuk stasiun baru, kita perlu reset semua termasuk titik awal
+    setRouteEndPoint(null)
+    setRouteInfo(null)
+    setSelectedDestinationPosition(null)
+    
+    // Set stasiun baru yang dipilih
     setSelectedStationId(stationId)
-    setShowDestinations(null) // Reset destinations when selecting a new station
-    setIsDestSidebarOpen(false) // Close destination sidebar
+    
+    // Automatically show destinations for the selected station
+    setShowDestinations(stationId)
+    setIsDestSidebarOpen(true)
+    
+    // Set as start point
+    setRouteStartPoint(position as [number, number])
+    console.log("Set new start point:", position);
 
     if (mapRef.current) {
-      mapRef.current.flyTo(position, 15, {
-        duration: 2, // Duration in seconds
+      mapRef.current.flyTo(position, 14, { // Zoom level 14 to show destinations
+        duration: 2,
         easeLinearity: 0.25,
       })
     }
   }
 
-  const handleShowDestinations = (stationId: number) => {
-    setShowDestinations(stationId)
-    setIsDestSidebarOpen(true) // Open destination sidebar
-
-    // Zoom out slightly to show destinations
-    if (mapRef.current) {
-      const station = stations.find((s) => s.id === stationId)
-      if (station) {
-        mapRef.current.flyTo(station.position, 14, {
-          duration: 1,
-        })
-      }
+  // Fungsi reset route yang lebih "hardcore"
+  const resetRoute = () => {
+    console.log("Reset route called, keeping start point:", routeStartPoint);
+    // Reset titik akhir dan informasi rute
+    setRouteEndPoint(null)
+    setRouteInfo(null)
+    setSelectedDestinationPosition(null)
+    
+    // Jangan reset titik awal (routeStartPoint) karena itu adalah posisi stasiun yang dipilih
+    // Ini memastikan bahwa ketika pengguna memilih destinasi baru di stasiun yang sama,
+    // rute akan dihitung dari stasiun yang sama
+    
+    // Reset view ke seluruh peta jika diperlukan
+    if (mapRef.current && !selectedStationId) {
+      const positions = stations.map((station: Station) => station.position)
+      const bounds = L.latLngBounds(positions)
+      mapRef.current.flyToBounds(bounds, { padding: [50, 50], maxZoom: 12, duration: 1.5 })
     }
   }
 
   const handleDestinationSelect = (position: L.LatLngExpression) => {
+    // Simpan posisi destinasi yang dipilih
     setSelectedDestinationPosition(position as [number, number])
 
-    if (mapRef.current) {
-      mapRef.current.flyTo(position, 16, {
-        duration: 1.5,
-      })
+    // Jika titik awal sudah ada (stasiun sudah dipilih), set destinasi sebagai titik akhir
+    if (routeStartPoint) {
+      console.log("Setting end point:", position, "with start point:", routeStartPoint);
+      setRouteEndPoint(position as [number, number])
+      
+      // Hitung jarak antara stasiun dan destinasi untuk menentukan level zoom
+      const startLatLng = L.latLng(routeStartPoint[0], routeStartPoint[1]);
+      const endLatLng = L.latLng((position as [number, number])[0], (position as [number, number])[1]);
+      const distanceInMeters = startLatLng.distanceTo(endLatLng);
+      
+      // Tentukan zoom level berdasarkan jarak (3 level: 0-1000m, 1000-2000m, >2000m)
+      let zoomLevel = 16; // Default zoom level
+      
+      if (distanceInMeters <= 1000) {
+        zoomLevel = 17; // Dekat (0-1000m)
+      } else if (distanceInMeters <= 2000) {
+        zoomLevel = 16; // Sedang (1000-2000m)
+      } else {
+        zoomLevel = 15; // Jauh (>2000m)
+      }
+      
+      console.log(`Jarak ke destinasi: ${Math.round(distanceInMeters)}m, zoom level: ${zoomLevel}`);
+      
+      // Buat bounds yang mencakup kedua titik
+      const bounds = L.latLngBounds([startLatLng, endLatLng]);
+      
+      // Zoom ke bounds yang mencakup kedua titik dengan padding
+      if (mapRef.current) {
+        mapRef.current.flyToBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: zoomLevel,
+          duration: 1.5
+        });
+      }
+    } else {
+      console.log("No start point available, cannot set end point");
     }
+  }
+
+  const handleTransportModeChange = (mode: "pedestrian" | "auto" | "motorcycle") => {
+    setTransportMode(mode);
+    // Reset route info when changing transport mode
+    setRouteInfo(null);
   }
 
   const toggleSidebar = () => {
@@ -565,6 +1285,10 @@ export default function MapComponent() {
 
   const toggleDestSidebar = () => {
     setIsDestSidebarOpen(!isDestSidebarOpen)
+  }
+
+  const handleRouteCalculated = (distance: number, duration: number) => {
+    setRouteInfo({ distance, duration })
   }
 
   // Get the selected station for destination sidebar
@@ -605,14 +1329,21 @@ export default function MapComponent() {
           <MapActions onMapReady={handleMapReady} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
           />
           <MarkerManager
             stations={stations}
             selectedStationId={selectedStationId}
             showDestinations={showDestinations}
-            onShowDestinations={handleShowDestinations}
             selectedDestinationPosition={selectedDestinationPosition}
+          />
+          
+          {/* Routing component */}
+          <RoutingControl 
+            startPoint={routeStartPoint} 
+            endPoint={routeEndPoint}
+            transportMode={transportMode}
+            onRouteCalculated={handleRouteCalculated}
           />
         </MapContainer>
       </div>
@@ -620,12 +1351,21 @@ export default function MapComponent() {
       {/* Right Sidebar - Destinations */}
       {selectedStation && (
         <DestinationSidebar
+          key={`station-${selectedStation.id}`}
           stationName={selectedStation.name}
           stationLocation={selectedStation.location}
           destinations={selectedStation.destinations as Destination[]}
           onDestinationSelect={handleDestinationSelect}
           isOpen={isDestSidebarOpen}
           onToggle={toggleDestSidebar}
+          stationPosition={selectedStation.position}
+          routeInfo={routeInfo}
+          routeStartPoint={routeStartPoint}
+          routeEndPoint={routeEndPoint}
+          onResetRoute={resetRoute}
+          transportMode={transportMode}
+          onTransportModeChange={handleTransportModeChange}
+          formatDuration={formatDuration}
         />
       )}
     </div>

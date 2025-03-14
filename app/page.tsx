@@ -9,8 +9,14 @@ export default function Home() {
       <header className="bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg border-b py-3 px-4 sticky top-0 z-10">
         <div className="container mx-auto px-0">
           <div className="flex justify-between items-center relative">
-            <div className="w-24">
-              {/* Elemen kosong untuk menyeimbangkan layout */}
+            <div className="flex items-center gap-4 z-20">
+              <Image 
+                src="/logo-kai-white.png" 
+                alt="KAI Logo" 
+                width={100} 
+                height={100}
+                className="h-14 w-auto"
+              />
             </div>
             
             <div className="absolute left-1/2 transform -translate-x-1/2">

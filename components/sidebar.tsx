@@ -42,7 +42,7 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
           <div className="flex justify-between items-center p-4 pr-8 border-b bg-gradient-to-r from-red-600 to-red-700">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <MapPin className="h-5 w-5" />
-              Stasiun LRT
+              Stasiun LRT Jabodebek
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto bg-gray-50/80">
@@ -97,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
           hover:bg-gray-50 active:bg-gray-100
           border border-gray-200
           flex items-center justify-center
-          z-10 
+          z-[1000] 
           focus:outline-none focus:ring-2 focus:ring-red-600
           transform hover:scale-105 active:scale-95
         `}
