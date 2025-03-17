@@ -1,7 +1,19 @@
-import MapComponent from "@/components/map-component"
+import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { Button } from "@/components/ui/button"
 import { ModeToggle } from "@/components/mode-toggle"
+
+const MapComponent = dynamic(() => import("@/components/map-component"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-full w-full bg-gray-100">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Memuat peta...</p>
+      </div>
+    </div>
+  )
+})
 
 export default function Home() {
   return (

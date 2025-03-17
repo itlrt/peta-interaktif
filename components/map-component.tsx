@@ -9,6 +9,7 @@ import DestinationSidebar from "./destination-sidebar-new"
 import { MapPin, Train, Navigation } from "lucide-react"
 import { renderToString } from "react-dom/server"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import Image from "next/image"
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.divIcon({
@@ -374,17 +375,23 @@ const StationPopup = ({
     <div className="min-w-[280px]">
       <div className="flex gap-2 items-start">
         <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
-          <img
-            src={station.image || "/placeholder.svg"}
-            alt={`Gambar Stasiun ${station.name}`}
-            className="w-full h-full object-cover rounded-lg"
-          />
+          {station.image && (
+            <Image 
+              src={station.image} 
+              alt={station.name}
+              width={80}
+              height={80}
+              className="w-full h-full object-cover rounded-lg"
+            />
+          )}
         </div>
         <div className="flex-1">
           <div className="mb-1">
-            <img
+            <Image
               src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO-LRT-sjqURYP5YQquhOaJ2hXr9JTrH0hFC2.png"
               alt="Logo LRT Jabodebek"
+              width={64}
+              height={16}
               className="h-4 object-contain"
             />
           </div>
@@ -483,11 +490,15 @@ function MarkerManager({
           <Popup>
             <div className="p-2 text-center min-w-[200px]">
               <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
-                <img
-                  src={destination.image || "/placeholder.svg?height=96&width=200"}
-                  alt={`Gambar ${destination.name}`}
-                  className="w-full h-full object-cover"
-                />
+                {destination.image && (
+                  <Image 
+                    src={destination.image} 
+                    alt={destination.name}
+                    width={200}
+                    height={96}
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
               <h3 className="font-semibold text-sm">{destination.name}</h3>
             </div>
@@ -534,6 +545,14 @@ function RoutingControl({
   const prevStartPointRef = useRef<[number, number] | null>(null)
   const prevEndPointRef = useRef<[number, number] | null>(null)
   const prevTransportModeRef = useRef<string | null>(null)
+
+  // Pindahkan useEffect untuk fit bounds ke sini
+  useEffect(() => {
+    if (map && routeCoordinates.length > 0) {
+      const bounds = L.latLngBounds(routeCoordinates)
+      map.fitBounds(bounds, { padding: [50, 50] })
+    }
+  }, [map, routeCoordinates])
 
   useEffect(() => {
     // Jika titik awal, akhir, dan mode transportasi sama dengan sebelumnya, tidak perlu memuat ulang rute

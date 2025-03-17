@@ -4,6 +4,7 @@ import React from "react"
 import type { LatLngExpression } from "leaflet"
 import { ChevronLeft, ChevronRight, MapPin, Navigation } from "lucide-react"
 import { stations } from "./map-component" // Import stations dari map-component
+import Image from "next/image"
 
 interface Destination {
   name: string
@@ -102,16 +103,18 @@ const DestinationSidebar: React.FC<DestinationSidebarProps> = ({
                   `}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                    <div className="w-14 h-14 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                       {destination.image ? (
-                        <img 
+                        <Image 
                           src={destination.image} 
-                          alt={destination.name} 
+                          alt={destination.name}
+                          width={56}
+                          height={56}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-red-100">
-                          <MapPin size={16} className={selectedDestination === destination.name ? "text-white" : "text-red-600"} />
+                          <MapPin size={20} className="text-red-600" />
                         </div>
                       )}
                     </div>

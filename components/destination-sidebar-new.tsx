@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
-import { MapPin, Navigation } from "lucide-react"
+import { MapPin, Navigation, ChevronLeft, ChevronRight } from "lucide-react"
 import { Destination } from "./map-component"
+import Image from "next/image"
 
 interface DestinationSidebarProps {
   stationName: string
@@ -212,7 +213,7 @@ export default function DestinationSidebar({
     return () => {
       calculationRef.current = false
     }
-  }, [destinations, stationPosition, retryCount, transportMode, calculateRoutes])
+  }, [destinations, stationPosition, retryCount, transportMode, calculateRoutes, currentStationPosition, processingDestinations.length])
 
   // Fungsi untuk mencoba ulang perhitungan rute secara manual
   const handleRetryCalculation = () => {
@@ -305,11 +306,13 @@ export default function DestinationSidebar({
                   onClick={() => onDestinationSelect(destination.position)}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                    <div className="w-14 h-14 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
                       {destination.image ? (
-                        <img 
+                        <Image 
                           src={destination.image} 
-                          alt={destination.name} 
+                          alt={destination.name}
+                          width={56}
+                          height={56}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -362,10 +365,11 @@ export default function DestinationSidebar({
                     : "bg-red-600 hover:bg-red-700 text-white"
                 }`}
               >
-                <img 
+                <Image 
                   src={transportMode === "auto" ? "/car-red.png" : "/car-white.png"} 
                   alt="Mobil" 
-                  className="h-6 w-6" 
+                  width={24}
+                  height={24}
                 />
               </button>
               <button 
@@ -376,10 +380,11 @@ export default function DestinationSidebar({
                     : "bg-red-600 hover:bg-red-700 text-white"
                 }`}
               >
-                <img 
+                <Image 
                   src={transportMode === "pedestrian" ? "/walking-red.png" : "/walking-white.png"} 
                   alt="Jalan Kaki" 
-                  className="h-6 w-6" 
+                  width={24}
+                  height={24}
                 />
               </button>
               <button 
@@ -390,10 +395,11 @@ export default function DestinationSidebar({
                     : "bg-red-600 hover:bg-red-700 text-white"
                 }`}
               >
-                <img 
+                <Image 
                   src={transportMode === "motorcycle" ? "/motorcycle-red.png" : "/motorcycle-white.png"} 
                   alt="Motor" 
-                  className="h-6 w-6" 
+                  width={24}
+                  height={24}
                 />
               </button>
             </div>
