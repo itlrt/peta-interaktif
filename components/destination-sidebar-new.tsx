@@ -442,14 +442,14 @@ export default function DestinationSidebar({
             {routeInfo && (
               <div className="bg-white rounded-lg p-4 shadow-md mb-4">
                 <div className="flex justify-between items-center">
-                  <div>
+                  <div className="text-center">
                     <p className="text-xs text-gray-500 font-medium">Jarak</p>
-                    <p className="text-xl font-bold">{Math.round(routeInfo.distance)}m</p>
+                    <p className="text-xl font-bold">{routeInfo.distance >= 1000 ? `${(routeInfo.distance/1000).toFixed(1)} km` : `${Math.round(routeInfo.distance)} m`}</p>
                   </div>
                   <div className="h-10 w-px bg-gray-200"></div>
-                  <div>
+                  <div className="text-center">
                     <p className="text-xs text-gray-500 font-medium">Waktu</p>
-                    <p className="text-xl font-bold">{formatDuration(routeInfo.duration)}</p>
+                    <p className="text-xl font-bold">{formatDuration(routeInfo.duration)} menit</p>
                   </div>
                 </div>
               </div>

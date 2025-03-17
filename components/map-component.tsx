@@ -66,18 +66,18 @@ export const stations: Station[] = [
       { 
         name: "Taman Menteng Dukuh Atas", 
         position: [-6.196270033723199, 106.82936424054809],
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Taman_Menteng.JPG/640px-Taman_Menteng.JPG"
+        image: "/placeholder.svg?height=80&width=80"
       },
       { name: "Grha BNI", position: [-6.203251371497656, 106.82132904054815] },
       { 
         name: "Grand Indonesia", 
         position: [-6.1949099877325455, 106.82111740905012],
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Grand_Indonesia_Shopping_Town%2C_Jakarta.jpg/640px-Grand_Indonesia_Shopping_Town%2C_Jakarta.jpg"
+        image: "/placeholder.svg?height=80&width=80"
       },
       { 
         name: "MRT Dukuh Atas", 
         position: [-6.201275304534395, 106.82251849580109],
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/MRT_Jakarta_Dukuh_Atas_BNI_Station.jpg/640px-MRT_Jakarta_Dukuh_Atas_BNI_Station.jpg"
+        image: "/placeholder.svg?height=80&width=80"
       },
       { name: "KRL Sudirman", position: [-6.202636553988454, 106.82500627960421] },
       { name: "BNI City", position: [-6.201456452119922, 106.8212522193132] },
@@ -287,7 +287,7 @@ export const stations: Station[] = [
       { 
         name: "Taman Rekreasi TMII", 
         position: [-6.301985273640397, 106.88988166753474],
-        image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Taman_Mini_Indonesia_Indah_Aerial.jpg/640px-Taman_Mini_Indonesia_Indah_Aerial.jpg"
+        image: "/placeholder.svg?height=80&width=80"
       },
       { name: "Terminal Pinang Ranti", position: [-6.29008400188741, 106.88091230715386] },
     ],
@@ -386,15 +386,6 @@ const StationPopup = ({
           )}
         </div>
         <div className="flex-1">
-          <div className="mb-1">
-            <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO-LRT-sjqURYP5YQquhOaJ2hXr9JTrH0hFC2.png"
-              alt="Logo LRT Jabodebek"
-              width={64}
-              height={16}
-              className="h-4 object-contain"
-            />
-          </div>
           <h3 className="font-bold text-base leading-tight">STASIUN {station.name.toUpperCase()}</h3>
           <p className="text-xs text-gray-600">{station.location}</p>
         </div>

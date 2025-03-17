@@ -52,7 +52,7 @@ export default function Home() {
         <MapComponent />
       </div>
 
-      <footer className="bg-gray-800 text-white py-2 px-3 text-sm relative z-10">
+      {/* <footer className="bg-gray-800 text-white py-2 px-3 text-sm relative z-10">
         <div className="container mx-auto">
           <div className="flex flex-wrap justify-between items-center">
             <div>
@@ -63,7 +63,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </main>
   )
 }
