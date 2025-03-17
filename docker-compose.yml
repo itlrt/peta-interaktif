@@ -7,13 +7,10 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "3000:3000"
+      - "5006:3000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       - NODE_ENV=production
     volumes:
       - ./public:/app/public
-
-volumes:
-  postgres_data:
