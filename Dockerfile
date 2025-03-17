@@ -25,20 +25,15 @@ WORKDIR /app
 # Copy necessary files from builder
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies and generate Prisma client
+# Install production dependencies
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN npm install --production
-
-# Expose port
-EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 # Start the application
-CMD ["node", "server.js"]
+CMD npm start
