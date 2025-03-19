@@ -31,8 +31,9 @@ export default function Home() {
               />
             </div>
             
-            <div className="absolute left-1/2 transform -translate-x-1/2">
-              <h1 className="text-xl font-bold">Peta Interaktif LRT Jabodebek</h1>
+            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
+              <h1 className="text-2xl font-bold">Peta Interaktif LRT Jabodebek</h1>
+              <p className="text-sm mt-1">Mulai Perjalananmu dengan LRT JABODEBEK</p>
             </div>
             
             <div className="flex items-center gap-4 z-20">
