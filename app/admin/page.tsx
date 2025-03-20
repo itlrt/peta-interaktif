@@ -1,103 +1,166 @@
-import Link from "next/link"
-import { Map, Users, Settings, PlusCircle } from "lucide-react"
+"use client"
+
+import { useEffect, useState } from "react"
+import { LayoutDashboard, Map, Users, Clock, Activity as ActivityIcon } from "lucide-react"
+import { formatDistanceToNow } from 'date-fns'
+import { id } from 'date-fns/locale'
+
+interface DashboardStats {
+  totalStations: number
+  totalDestinations: number
+  totalUsers: number
+}
+
+interface Activity {
+  id: number
+  type: string
+  message: string
+  userId: number
+  createdAt: string
+  user: {
+    name: string
+    username: string
+  }
+}
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    totalStations: 0,
+    totalDestinations: 0,
+    totalUsers: 0
+  })
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [stationsRes, destinationsRes, usersRes] = await Promise.all([
+          fetch("/api/stations/count"),
+          fetch("/api/destinations/count"),
+          fetch("/api/users/count")
+        ])
+
+        const stations = await stationsRes.json()
+        const destinations = await destinationsRes.json()
+        const users = await usersRes.json()
+
+        setStats({
+          totalStations: stations.count,
+          totalDestinations: destinations.count,
+          totalUsers: users.count
+        })
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error)
+      }
+    }
+
+    fetchStats()
+  }, [])
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const response = await fetch('/api/activities')
+        if (!response.ok) throw new Error('Failed to fetch activities')
+        const data = await response.json()
+        setActivities(data)
+      } catch (error) {
+        console.error('Error fetching activities:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchActivities()
+  }, [])
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+      </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-              <Map className="h-6 w-6" />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Stasiun</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.totalStations}</p>
             </div>
-            <div className="ml-4">
-              <h3 className="text-gray-500 text-sm">Total Stasiun</h3>
-              <p className="text-2xl font-semibold">18</p>
+            <div className="p-3 bg-red-50 rounded-full">
+              <Map className="h-6 w-6 text-red-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center">
-            <div className="p-3 rounded-full bg-green-100 text-green-600">
-              <Users className="h-6 w-6" />
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Destinasi</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.totalDestinations}</p>
             </div>
-            <div className="ml-4">
-              <h3 className="text-gray-500 text-sm">Total Destinasi</h3>
-              <p className="text-2xl font-semibold">87</p>
+            <div className="p-3 bg-blue-50 rounded-full">
+              <LayoutDashboard className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Pengguna</p>
+              <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</p>
+            </div>
+            <div className="p-3 bg-green-50 rounded-full">
+              <Users className="h-6 w-6 text-green-600" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Aksi Cepat</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link
-            href="/admin/stations/add"
-            className="p-4 border rounded-lg text-center hover:bg-red-50 hover:border-red-200 transition-colors"
-          >
-            <div className="flex flex-col items-center">
-              <div className="p-3 rounded-full bg-red-100 text-red-600 mb-2">
-                <PlusCircle className="h-6 w-6" />
-              </div>
-              <span className="font-medium">Tambah Stasiun Baru</span>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/stations"
-            className="p-4 border rounded-lg text-center hover:bg-blue-50 hover:border-blue-200 transition-colors"
-          >
-            <div className="flex flex-col items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-600 mb-2">
-                <Map className="h-6 w-6" />
-              </div>
-              <span className="font-medium">Kelola Stasiun</span>
-            </div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Recent activity */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 pb-3">
-          <h2 className="text-lg font-semibold">Aktivitas Terbaru</h2>
-        </div>
-        <div className="divide-y">
-          <div className="flex items-start p-6">
-            <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-              <Users className="h-4 w-4" />
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium">Admin menambahkan destinasi baru di Stasiun Dukuh Atas</p>
-              <p className="text-xs text-gray-500 mt-1">2 jam yang lalu</p>
-            </div>
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <ActivityIcon className="h-5 w-5 text-gray-600" />
+              Aktivitas Terbaru
+            </h2>
           </div>
 
-          <div className="flex items-start p-6">
-            <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-              <Map className="h-4 w-4" />
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium">Admin memperbarui informasi Stasiun Cikunir 2</p>
-              <p className="text-xs text-gray-500 mt-1">Kemarin, 15:30</p>
+          ) : activities.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Belum ada aktivitas
             </div>
-          </div>
-
-          <div className="flex items-start p-6">
-            <div className="h-8 w-8 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center flex-shrink-0">
-              <Settings className="h-4 w-4" />
+          ) : (
+            <div className="space-y-6">
+              {activities.map((activity) => (
+                <div key={activity.id} className="flex items-start gap-4 pb-6 border-b border-gray-100 last:border-0">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-red-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900">{activity.message}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      oleh Administrator •{' '}
+                      {formatDistanceToNow(new Date(activity.createdAt), {
+                        addSuffix: true,
+                        locale: id,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium">Admin mengubah pengaturan tampilan peta</p>
-              <p className="text-xs text-gray-500 mt-1">2 hari yang lalu</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

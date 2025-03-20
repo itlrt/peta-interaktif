@@ -12,24 +12,27 @@ const useAuth = () => {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null)
 
   useEffect(() => {
     // Check if user is logged in
-    // This is a simple simulation - in a real app, check tokens/cookies
     const checkAuth = () => {
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true"
-      setIsAuthenticated(isLoggedIn)
-      setIsLoading(false)
-
-      if (!isLoggedIn && !window.location.pathname.includes("/admin/login")) {
+      const token = localStorage.getItem("token")
+      const userData = localStorage.getItem("user")
+      
+      if (token && userData) {
+        setIsAuthenticated(true)
+        setUser(JSON.parse(userData))
+      } else if (!window.location.pathname.includes("/admin/login")) {
         router.push("/admin/login")
       }
+      setIsLoading(false)
     }
 
     checkAuth()
   }, [router])
 
-  return { isAuthenticated, isLoading }
+  return { isAuthenticated, isLoading, user }
 }
 
 export default function AdminLayout({
@@ -38,7 +41,7 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Automatically open settings submenu if we're on a settings page
@@ -52,7 +55,8 @@ export default function AdminLayout({
   const isLoginPage = pathname === "/admin/login"
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn")
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
     window.location.href = "/admin/login"
   }
 
@@ -108,54 +112,57 @@ export default function AdminLayout({
                 Stasiun
               </Link>
             </li>
-            <li className="space-y-1">
-              <button
-                onClick={() => setSettingsOpen(!settingsOpen)}
-                className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${
-                  pathname?.includes("/admin/settings") ? "bg-red-50 text-red-600" : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <div className="flex items-center">
-                  <Settings className="h-5 w-5 mr-3" />
-                  Pengaturan
-                </div>
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform duration-200 ${settingsOpen ? "transform rotate-180" : ""}`}
-                />
-              </button>
+            
+            {user?.role === 'ADMIN' && (
+              <>
+                <button
+                  onClick={() => setSettingsOpen(!settingsOpen)}
+                  className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${
+                    pathname?.includes("/admin/settings") ? "bg-red-50 text-red-600" : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <Settings className="h-5 w-5 mr-3" />
+                    Pengaturan
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${settingsOpen ? "transform rotate-180" : ""}`}
+                  />
+                </button>
 
-              {/* Settings submenu */}
-              {settingsOpen && (
-                <ul className="pl-10 space-y-1">
-                  <li>
-                    <Link
-                      href="/admin/settings/users"
-                      className={`flex items-center px-4 py-2 rounded-md text-sm ${
-                        pathname === "/admin/settings/users"
-                          ? "bg-red-50 text-red-600"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Pengguna
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      href="/admin/settings/roles"
-                      className={`flex items-center px-4 py-2 rounded-md text-sm ${
-                        pathname === "/admin/settings/roles"
-                          ? "bg-red-50 text-red-600"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      <Shield className="h-4 w-4 mr-2" />
-                      Roles
-                    </Link>
-                  </li>
-                </ul>
-              )}
-            </li>
+                {/* Settings submenu */}
+                {settingsOpen && (
+                  <ul className="pl-10 space-y-1">
+                    <li>
+                      <Link
+                        href="/admin/settings/users"
+                        className={`flex items-center px-4 py-2 rounded-md text-sm ${
+                          pathname === "/admin/settings/users"
+                            ? "bg-red-50 text-red-600"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <Users className="h-4 w-4 mr-2" />
+                        Pengguna
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/admin/settings/roles"
+                        className={`flex items-center px-4 py-2 rounded-md text-sm ${
+                          pathname === "/admin/settings/roles"
+                            ? "bg-red-50 text-red-600"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Roles
+                      </Link>
+                    </li>
+                  </ul>
+                )}
+              </>
+            )}
           </ul>
         </nav>
 
@@ -188,8 +195,10 @@ export default function AdminLayout({
           <div className="flex justify-between items-center px-6 py-4">
             <h2 className="text-xl font-semibold text-gray-800">CMS LRT Jabodebek</h2>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Admin</span>
-              <div className="h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center">A</div>
+              <span className="text-sm text-gray-600">{user?.name || 'Admin'}</span>
+              <div className="h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center">
+                {user?.name?.[0]?.toUpperCase() || 'A'}
+              </div>
             </div>
           </div>
         </header>

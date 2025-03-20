@@ -1,341 +1,249 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, User, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
 
-// Dummy data for roles
-const availableRoles = [
-  { id: 1, name: "Administrator" },
-  { id: 2, name: "Operator" },
-  { id: 3, name: "Petugas" },
-]
-
-interface UserData {
-  name: string
-  email: string
-  password: string
-  confirmPassword: string
-  roleId: number
-  status: "active" | "inactive"
+// Definisikan enum UserRole sesuai dengan schema.prisma
+enum UserRole {
+  ADMIN = "ADMIN",
+  OPERATOR = "OPERATOR",
+  VIEWER = "VIEWER"
 }
 
 export default function AddUserPage() {
-  const [userData, setUserData] = useState<UserData>({
+  const router = useRouter()
+  const [formData, setFormData] = useState({
     name: "",
-    email: "",
+    username: "",
     password: "",
     confirmPassword: "",
-    roleId: 0,
-    status: "active",
+    role: UserRole.OPERATOR,
   })
-
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [errors, setErrors] = useState<Partial<Record<keyof UserData, string>>>({})
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setUserData((prev) => ({ ...prev, [name]: value }))
-
-    // Clear error when field is edited
-    if (errors[name as keyof UserData]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name as keyof UserData]
-        return newErrors
-      })
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleStatusChange = (status: "active" | "inactive") => {
-    setUserData((prev) => ({ ...prev, status }))
-  }
-
-  const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof UserData, string>> = {}
-
-    // Validate name
-    if (!userData.name.trim()) {
-      newErrors.name = "Nama harus diisi"
-    }
-
-    // Validate email
-    if (!userData.email.trim()) {
-      newErrors.email = "Email harus diisi"
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
-      newErrors.email = "Format email tidak valid"
-    }
-
-    // Validate password
-    if (!userData.password) {
-      newErrors.password = "Password harus diisi"
-    } else if (userData.password.length < 6) {
-      newErrors.password = "Password minimal 6 karakter"
-    }
-
-    // Validate confirm password
-    if (userData.password !== userData.confirmPassword) {
-      newErrors.confirmPassword = "Password tidak cocok"
-    }
-
-    // Validate role
-    if (!userData.roleId) {
-      newErrors.roleId = "Role harus dipilih"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
-    if (!validateForm()) {
+    // Validasi
+    if (!formData.name || !formData.username || !formData.password || !formData.confirmPassword) {
+      setError("Semua field harus diisi")
+      setIsLoading(false)
       return
     }
 
-    // Here you would typically send this data to your API
-    console.log("Submitting user data:", userData)
-    alert("Pengguna berhasil ditambahkan! (simulasi)")
+    if (formData.password !== formData.confirmPassword) {
+      setError("Password dan konfirmasi password tidak cocok")
+      setIsLoading(false)
+      return
+    }
 
-    // In a real application, you would redirect after successful submission
-    // router.push('/admin/settings/users')
+    try {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          username: formData.username,
+          password: formData.password,
+          role: formData.role,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menambahkan pengguna")
+      }
+
+      // Redirect ke halaman daftar pengguna
+      router.push("/admin/settings/users")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center mb-6">
-        <Link href="/admin/settings/users" className="mr-4 p-2 rounded-full hover:bg-gray-200">
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-2xl font-bold">Tambah Pengguna Baru</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-800">Tambah Pengguna Baru</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* User Information */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <User className="mr-2 h-5 w-5 text-blue-600" />
-            Informasi Pengguna
-          </h2>
+      <div className="bg-white shadow-sm rounded-lg p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+              {error}
+            </div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Lengkap <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+          <div className="grid grid-cols-1 gap-6">
+            {/* Informasi Pengguna */}
+            <div className="space-y-6">
+              <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 mr-2 flex items-center justify-center text-sm">1</span>
+                Informasi Pengguna
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Nama Lengkap <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
                 </div>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={userData.name}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none ${
-                    errors.name ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Masukkan nama lengkap"
-                />
+
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                    Username <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  />
+                </div>
               </div>
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={userData.email}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none ${
-                    errors.email ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="email@example.com"
-                />
-              </div>
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  name="password"
-                  value={userData.password}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-10 py-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Minimal 6 karakter"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Konfirmasi Password <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={userData.confirmPassword}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-10 py-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none ${
-                    errors.confirmPassword ? "border-red-500" : "border-gray-300"
-                  }`}
-                  placeholder="Masukkan password yang sama"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-              {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
-            </div>
-          </div>
-        </div>
-
-        {/* Role and Status */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <Shield className="mr-2 h-5 w-5 text-purple-600" />
-            Role dan Status
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="roleId" className="block text-sm font-medium text-gray-700 mb-1">
-                Role <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Shield className="h-5 w-5 text-gray-400" />
-                </div>
-                <select
-                  id="roleId"
-                  name="roleId"
-                  value={userData.roleId}
-                  onChange={handleInputChange}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-purple-600 focus:outline-none appearance-none bg-white ${
-                    errors.roleId ? "border-red-500" : "border-gray-300"
-                  }`}
-                >
-                  <option value={0}>Pilih Role</option>
-                  {availableRoles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                      clipRule="evenodd"
+            {/* Password */}
+            <div className="space-y-6">
+              <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 mr-2 flex items-center justify-center text-sm">2</span>
+                Password
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1 relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                     />
-                  </svg>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                    Konfirmasi Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1 relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-              {errors.roleId && <p className="mt-1 text-sm text-red-600">{errors.roleId}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <div className="flex space-x-4 mt-2">
-                <div
-                  className={`flex items-center px-4 py-2 rounded-md cursor-pointer border ${
-                    userData.status === "active"
-                      ? "bg-green-50 border-green-500 text-green-700"
-                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                  onClick={() => handleStatusChange("active")}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full mr-2 ${userData.status === "active" ? "bg-green-500" : "bg-gray-300"}`}
-                  ></div>
-                  <span>Aktif</span>
-                </div>
-                <div
-                  className={`flex items-center px-4 py-2 rounded-md cursor-pointer border ${
-                    userData.status === "inactive"
-                      ? "bg-gray-50 border-gray-500 text-gray-700"
-                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                  onClick={() => handleStatusChange("inactive")}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full mr-2 ${userData.status === "inactive" ? "bg-gray-500" : "bg-gray-300"}`}
-                  ></div>
-                  <span>Tidak Aktif</span>
+            {/* Role dan Status */}
+            <div className="space-y-6">
+              <h2 className="text-lg font-medium text-gray-900 flex items-center">
+                <span className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 mr-2 flex items-center justify-center text-sm">3</span>
+                Role dan Status
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                    Role <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                  >
+                    <option value={UserRole.ADMIN}>Admin</option>
+                    <option value={UserRole.OPERATOR}>Operator</option>
+                    <option value={UserRole.VIEWER}>Viewer</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Submit buttons */}
-        <div className="flex justify-end space-x-4">
-          <Link
-            href="/admin/settings/users"
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            Batal
-          </Link>
-          <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Simpan Pengguna
-          </button>
-        </div>
-      </form>
+          <div className="flex justify-end space-x-3">
+            <Link
+              href="/admin/settings/users"
+              className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Batal
+            </Link>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                isLoading ? "bg-red-400" : "bg-red-600 hover:bg-red-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500`}
+            >
+              {isLoading ? "Menyimpan..." : "Simpan Pengguna"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

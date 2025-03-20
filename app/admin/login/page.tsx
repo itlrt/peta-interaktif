@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Lock, User } from "lucide-react"
+import { Eye, EyeOff, Lock, User } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -12,12 +12,14 @@ export default function LoginPage() {
     username: "",
     password: "",
   })
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   // Check if already logged in
   useEffect(() => {
-    if (localStorage.getItem("isLoggedIn") === "true") {
+    const token = localStorage.getItem("token")
+    if (token) {
       router.push("/admin")
     }
   }, [router])
@@ -40,19 +42,28 @@ export default function LoginPage() {
     }
 
     try {
-      // Simulate authentication delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      })
 
-      // For demo purposes, accept any login with admin/admin
-      if (credentials.username === "admin" && credentials.password === "admin") {
-        // Set login state in localStorage (in a real app, use secure cookies/tokens)
-        localStorage.setItem("isLoggedIn", "true")
-        router.push("/admin")
-      } else {
-        setError("Username atau password salah")
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Terjadi kesalahan saat login")
       }
+
+      // Simpan token dan data user
+      localStorage.setItem("token", data.token)
+      localStorage.setItem("user", JSON.stringify(data.user))
+      
+      // Force a hard navigation to ensure layout is rerendered
+      window.location.href = "/admin"
     } catch (err) {
-      setError("Terjadi kesalahan saat login")
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan saat login")
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -68,8 +79,7 @@ export default function LoginPage() {
             alt="Logo LRT Jabodebek"
             className="h-16 mx-auto mb-4"
           />
-          <h1 className="text-2xl font-bold text-gray-800">Admin CMS</h1>
-          <p className="text-gray-600">Masuk untuk mengelola data LRT Jabodebek</p>
+          <p className="text-gray-600">Masuk untuk mengelola data Peta LRT Jabodebek</p>
         </div>
 
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}
@@ -90,7 +100,7 @@ export default function LoginPage() {
                 value={credentials.username}
                 onChange={handleChange}
                 className="pl-10 w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="admin"
+                placeholder="username"
               />
             </div>
           </div>
@@ -106,14 +116,23 @@ export default function LoginPage() {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={credentials.password}
                 onChange={handleChange}
                 className="pl-10 w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="admin"
+                placeholder="password"
               />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Untuk demo, gunakan username: admin, password: admin</p>
+              <div 
+                className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+            </div>  
           </div>
 
           <div>

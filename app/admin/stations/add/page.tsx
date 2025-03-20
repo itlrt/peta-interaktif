@@ -1,333 +1,352 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, MapPin, Plus, Trash2, ImageIcon } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, MapPin } from "lucide-react"
+
+interface Destination {
+  id?: number
+  name: string
+  latitude: number
+  longitude: number
+  imageUrl?: string
+}
 
 export default function AddStationPage() {
-  const [stationData, setStationData] = useState({
+  const router = useRouter()
+  const [formData, setFormData] = useState({
     name: "",
-    description: "",
-    location: "",
     latitude: "",
     longitude: "",
-    image: "/placeholder.svg?height=80&width=80",
+    imageUrl: "",
   })
+  const [destinations, setDestinations] = useState<Destination[]>([])
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const [destinations, setDestinations] = useState([
-    { name: "", latitude: "", longitude: "", image: "/placeholder.svg?height=80&width=80" },
-  ])
-
-  const handleStationChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setStationData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleDestinationChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    const newDestinations = [...destinations]
-    newDestinations[index] = { ...newDestinations[index], [name]: value }
-    setDestinations(newDestinations)
-  }
-
-  const addDestination = () => {
-    setDestinations([
-      ...destinations,
-      { name: "", latitude: "", longitude: "", image: "/placeholder.svg?height=80&width=80" },
+  const handleAddDestination = () => {
+    setDestinations((prev) => [
+      ...prev,
+      {
+        name: "",
+        latitude: 0,
+        longitude: 0,
+        imageUrl: "",
+      },
     ])
   }
 
-  const removeDestination = (index: number) => {
-    if (destinations.length > 1) {
-      const newDestinations = [...destinations]
-      newDestinations.splice(index, 1)
-      setDestinations(newDestinations)
-    }
+  const handleDestinationChange = (index: number, field: keyof Destination, value: string) => {
+    setDestinations((prev) =>
+      prev.map((dest, i) =>
+        i === index
+          ? {
+              ...dest,
+              [field]: field === "latitude" || field === "longitude" ? parseFloat(value) || 0 : value,
+            }
+          : dest
+      )
+    )
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRemoveDestination = (index: number) => {
+    setDestinations((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setIsLoading(true)
 
-    // Validate form
-    if (!stationData.name || !stationData.location || !stationData.latitude || !stationData.longitude) {
-      alert("Mohon lengkapi data stasiun")
-      return
-    }
+    try {
+      // Validasi input
+      if (!formData.name || !formData.latitude || !formData.longitude) {
+        throw new Error("Nama, latitude, dan longitude harus diisi")
+      }
 
-    // Validate destinations
-    for (const dest of destinations) {
-      if (!dest.name || !dest.latitude || !dest.longitude) {
-        alert("Mohon lengkapi semua data destinasi")
+      // Validasi format latitude dan longitude
+      const latitude = parseFloat(formData.latitude)
+      const longitude = parseFloat(formData.longitude)
+
+      if (isNaN(latitude) || isNaN(longitude)) {
+        throw new Error("Latitude dan longitude harus berupa angka")
+      }
+
+      // Validasi destinasi
+      const validDestinations = destinations.filter(
+        (dest) => dest.name && !isNaN(dest.latitude) && !isNaN(dest.longitude)
+      )
+
+      const token = localStorage.getItem("token")
+      if (!token) {
+        router.push("/admin/login")
         return
       }
+
+      // Kirim request
+      const response = await fetch("/api/stations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          latitude,
+          longitude,
+          imageUrl: formData.imageUrl || undefined,
+          destinations: validDestinations,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal menambahkan stasiun")
+      }
+
+      // Redirect ke halaman daftar stasiun
+      router.push("/admin/stations")
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan")
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
-
-    // Format data for submission
-    const formattedData = {
-      ...stationData,
-      position: [Number.parseFloat(stationData.latitude), Number.parseFloat(stationData.longitude)],
-      destinations: destinations.map((dest) => ({
-        name: dest.name,
-        position: [Number.parseFloat(dest.latitude), Number.parseFloat(dest.longitude)],
-        image: dest.image,
-      })),
-    }
-
-    // Here you would typically send this data to your API
-    console.log("Submitting station data:", formattedData)
-    alert("Stasiun berhasil ditambahkan! (simulasi)")
-
-    // In a real application, you would redirect after successful submission
-    // router.push('/admin/stations')
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center mb-6">
-        <Link href="/admin/stations" className="mr-4 p-2 rounded-full hover:bg-gray-200">
-          <ArrowLeft className="h-5 w-5" />
+      <div className="flex items-center gap-4 mb-8">
+        <Link
+          href="/admin/stations"
+          className="flex items-center text-sm text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Kembali
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold">Tambah Stasiun Baru</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Tambah Stasiun</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Station Information */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <MapPin className="mr-2 h-5 w-5 text-red-600" />
-            Informasi Stasiun
-          </h2>
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-md text-sm">
+          {error}
+        </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Data Stasiun */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Data Stasiun</h2>
+          
+          <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Stasiun <span className="text-red-500">*</span>
+                Nama Stasiun
               </label>
               <input
                 type="text"
                 id="name"
                 name="name"
-                value={stationData.name}
-                onChange={handleStationChange}
+                value={formData.name}
+                onChange={handleChange}
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="Contoh: Dukuh Atas"
                 required
               />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
+                  Latitude
+                </label>
+                <input
+                  type="text"
+                  id="latitude"
+                  name="latitude"
+                  value={formData.latitude}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
+                  Longitude
+                </label>
+                <input
+                  type="text"
+                  id="longitude"
+                  name="longitude"
+                  value={formData.longitude}
+                  onChange={handleChange}
+                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                  required
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                Lokasi <span className="text-red-500">*</span>
+              <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-1">
+                URL Gambar (opsional)
               </label>
               <input
                 type="text"
-                id="location"
-                name="location"
-                value={stationData.location}
-                onChange={handleStationChange}
+                id="imageUrl"
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleChange}
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="Contoh: Jakarta Pusat"
-                required
+                placeholder="/placeholder.svg?height=80&width=80"
               />
-            </div>
-
-            <div className="md:col-span-2">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Deskripsi
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={stationData.description}
-                onChange={handleStationChange}
-                rows={3}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="Deskripsi singkat tentang stasiun"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
-                Latitude <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="latitude"
-                name="latitude"
-                value={stationData.latitude}
-                onChange={handleStationChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="Contoh: -6.204828"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
-                Longitude <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="longitude"
-                name="longitude"
-                value={stationData.longitude}
-                onChange={handleStationChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="Contoh: 106.8255301"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                URL Gambar
-              </label>
-              <input
-                type="text"
-                id="image"
-                name="image"
-                value={stationData.image}
-                onChange={handleStationChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="URL gambar stasiun"
-              />
-              <p className="text-xs text-gray-500 mt-1">Biarkan kosong untuk menggunakan gambar default</p>
             </div>
           </div>
         </div>
 
-        {/* Destinations */}
-        <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold flex items-center">
-              <MapPin className="mr-2 h-5 w-5 text-blue-600" />
-              Destinasi Terdekat
-            </h2>
+        {/* Destinasi */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Destinasi Terdekat</h2>
             <button
               type="button"
-              onClick={addDestination}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg flex items-center text-sm"
+              onClick={handleAddDestination}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
             >
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4" />
               Tambah Destinasi
             </button>
           </div>
 
-          {destinations.map((destination, index) => (
-            <div key={index} className="border-t pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium">Destinasi #{index + 1}</h3>
+          <div className="space-y-6">
+            {destinations.map((destination, index) => (
+              <div key={index} className="relative bg-gray-50 rounded-lg p-4">
                 <button
                   type="button"
-                  onClick={() => removeDestination(index)}
-                  className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
-                  disabled={destinations.length === 1}
+                  onClick={() => handleRemoveDestination(index)}
+                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label htmlFor={`dest-name-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
-                    Nama Destinasi <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id={`dest-name-${index}`}
-                    name="name"
-                    value={destination.name}
-                    onChange={(e) => handleDestinationChange(index, e)}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                    placeholder="Nama tempat"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor={`dest-lat-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
-                    Latitude <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id={`dest-lat-${index}`}
-                    name="latitude"
-                    value={destination.latitude}
-                    onChange={(e) => handleDestinationChange(index, e)}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                    placeholder="Contoh: -6.196270"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor={`dest-lng-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
-                    Longitude <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    id={`dest-lng-${index}`}
-                    name="longitude"
-                    value={destination.longitude}
-                    onChange={(e) => handleDestinationChange(index, e)}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                    placeholder="Contoh: 106.829364"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor={`dest-image-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
-                    URL Gambar
-                  </label>
-                  <div className="flex">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nama Destinasi
+                    </label>
                     <input
                       type="text"
-                      id={`dest-image-${index}`}
-                      name="image"
-                      value={destination.image}
-                      onChange={(e) => handleDestinationChange(index, e)}
-                      className="w-full p-2 border rounded-l-md focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                      placeholder="URL gambar destinasi"
+                      value={destination.name}
+                      onChange={(e) => handleDestinationChange(index, "name", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                      required
                     />
-                    <div className="bg-gray-100 border border-l-0 rounded-r-md p-2 flex items-center">
-                      <ImageIcon className="h-5 w-5 text-gray-500" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Latitude
+                      </label>
+                      <input
+                        type="text"
+                        value={destination.latitude}
+                        onChange={(e) => handleDestinationChange(index, "latitude", e.target.value)}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                        required
+                      />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Longitude
+                      </label>
+                      <input
+                        type="text"
+                        value={destination.longitude}
+                        onChange={(e) => handleDestinationChange(index, "longitude", e.target.value)}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      URL Gambar (opsional)
+                    </label>
+                    <input
+                      type="text"
+                      value={destination.imageUrl}
+                      onChange={(e) => handleDestinationChange(index, "imageUrl", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                      placeholder="/placeholder.svg?height=80&width=80"
+                    />
                   </div>
                 </div>
               </div>
+            ))}
 
-              {/* Preview gambar destinasi */}
-              <div className="mt-3 flex items-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden border">
-                  <img
-                    src={destination.image || "/placeholder.svg?height=80&width=80"}
-                    alt={`Preview ${destination.name || "destinasi"}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=80&width=80"
-                    }}
-                  />
-                </div>
-                <span className="ml-3 text-xs text-gray-500">Preview gambar destinasi</span>
+            {destinations.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <p>Belum ada destinasi terdekat</p>
+                <p className="text-sm">Klik tombol "Tambah Destinasi" untuk menambahkan</p>
               </div>
-            </div>
-          ))}
+            )}
+          </div>
         </div>
 
-        {/* Submit buttons */}
-        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-4">
+        <div className="flex gap-4">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`px-4 py-2 rounded-md text-white font-medium 
+              ${isLoading ? "bg-red-400" : "bg-red-600 hover:bg-red-700"} 
+              transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
+          >
+            {isLoading ? (
+              <span className="flex items-center">
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Memproses...
+              </span>
+            ) : (
+              "Simpan Stasiun"
+            )}
+          </button>
+
           <Link
             href="/admin/stations"
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-center"
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
           >
             Batal
           </Link>
-          <button type="submit" className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-            Simpan Stasiun
-          </button>
         </div>
       </form>
     </div>
