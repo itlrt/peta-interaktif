@@ -138,7 +138,7 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
         if (formData.imageUrl) {
-          setFormData((prev) => ({ ...prev, imageUrl: undefined }))
+          setFormData((prev) => ({ ...prev, imageUrl: "" }))
         }
       }
       reader.readAsDataURL(file)
@@ -218,7 +218,7 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
 
       // Validasi destinasi
       const validDestinations = destinations.filter(
-        (dest) => dest.name && !isNaN(dest.latitude) && !isNaN(dest.longitude)
+        (dest) => dest.name && !isNaN(Number(dest.latitude)) && !isNaN(Number(dest.longitude))
       )
 
       // Upload gambar stasiun jika ada

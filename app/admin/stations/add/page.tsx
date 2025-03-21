@@ -3,14 +3,16 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, MapPin } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, MapPin, Upload } from "lucide-react"
+import Image from "next/image"
 
 interface Destination {
   id?: number
   name: string
-  latitude: number
-  longitude: number
+  latitude: number | string
+  longitude: number | string
   imageUrl?: string
+  imageFile?: File
 }
 
 export default function AddStationPage() {
@@ -24,6 +26,8 @@ export default function AddStationPage() {
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string>("")
+  const [destinationPreviews, setDestinationPreviews] = useState<string[]>([])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -38,8 +42,10 @@ export default function AddStationPage() {
         latitude: 0,
         longitude: 0,
         imageUrl: "",
+        imageFile: undefined,
       },
     ])
+    setDestinationPreviews((prev) => [...prev, ""])
   }
 
   const handleDestinationChange = (index: number, field: keyof Destination, value: string) => {
@@ -57,6 +63,76 @@ export default function AddStationPage() {
 
   const handleRemoveDestination = (index: number) => {
     setDestinations((prev) => prev.filter((_, i) => i !== index))
+    setDestinationPreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError("Ukuran gambar tidak boleh lebih dari 5MB")
+        return
+      }
+      
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+        setFormData((prev) => ({ ...prev, imageUrl: "" }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleDestinationImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError("Ukuran gambar tidak boleh lebih dari 5MB")
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const newPreviews = [...destinationPreviews]
+        newPreviews[index] = reader.result as string
+        setDestinationPreviews(newPreviews)
+        
+        const newDestinations = [...destinations]
+        newDestinations[index] = {
+          ...newDestinations[index],
+          imageUrl: undefined,
+          imageFile: file
+        }
+        setDestinations(newDestinations)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadImage = async (file: File) => {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    try {
+      const token = localStorage.getItem("token")
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Gagal mengunggah gambar")
+      }
+
+      const data = await response.json()
+      return data.url
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      throw new Error("Gagal mengunggah gambar")
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,7 +156,29 @@ export default function AddStationPage() {
 
       // Validasi destinasi
       const validDestinations = destinations.filter(
-        (dest) => dest.name && !isNaN(dest.latitude) && !isNaN(dest.longitude)
+        (dest) => dest.name && !isNaN(Number(dest.latitude)) && !isNaN(Number(dest.longitude))
+      )
+
+      // Upload gambar stasiun jika ada
+      let stationImageUrl = formData.imageUrl
+      const stationImageInput = document.querySelector<HTMLInputElement>('#station-image')
+      if (stationImageInput?.files?.[0]) {
+        stationImageUrl = await uploadImage(stationImageInput.files[0])
+      }
+
+      // Upload gambar destinasi dan persiapkan data
+      const destinationsWithImages = await Promise.all(
+        destinations.map(async (dest, index) => {
+          let imageUrl = dest.imageUrl
+          const input = document.querySelector<HTMLInputElement>(`#destination-image-${index}`)
+          if (input?.files?.[0]) {
+            imageUrl = await uploadImage(input.files[0])
+          }
+          return {
+            ...dest,
+            imageUrl
+          }
+        })
       )
 
       const token = localStorage.getItem("token")
@@ -100,8 +198,13 @@ export default function AddStationPage() {
           name: formData.name,
           latitude,
           longitude,
-          imageUrl: formData.imageUrl || undefined,
-          destinations: validDestinations,
+          imageUrl: stationImageUrl,
+          destinations: destinationsWithImages.map(dest => ({
+            name: dest.name,
+            latitude: Number(dest.latitude),
+            longitude: Number(dest.longitude),
+            imageUrl: dest.imageUrl
+          }))
         }),
       })
 
@@ -195,18 +298,32 @@ export default function AddStationPage() {
             </div>
 
             <div>
-              <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-1">
-                URL Gambar (opsional)
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Gambar Stasiun
               </label>
-              <input
-                type="text"
-                id="imageUrl"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                placeholder="/placeholder.svg?height=80&width=80"
-              />
+              <div className="space-y-2">
+                {imagePreview && (
+                  <div className="relative w-full h-48">
+                    <Image
+                      src={imagePreview}
+                      alt="Preview"
+                      fill
+                      className="object-cover rounded-lg"
+                    />
+                  </div>
+                )}
+                <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                  <Upload className="h-5 w-5 text-gray-500" />
+                  <span className="text-sm text-gray-600">Pilih Gambar</span>
+                  <input
+                    type="file"
+                    id="station-image"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -280,15 +397,31 @@ export default function AddStationPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      URL Gambar (opsional)
+                      Gambar Destinasi
                     </label>
-                    <input
-                      type="text"
-                      value={destination.imageUrl}
-                      onChange={(e) => handleDestinationChange(index, "imageUrl", e.target.value)}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                      placeholder="/placeholder.svg?height=80&width=80"
-                    />
+                    <div className="space-y-2">
+                      {destinationPreviews[index] && (
+                        <div className="relative w-full h-48">
+                          <Image
+                            src={destinationPreviews[index]}
+                            alt="Preview"
+                            fill
+                            className="object-cover rounded-lg"
+                          />
+                        </div>
+                      )}
+                      <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                        <Upload className="h-5 w-5 text-gray-500" />
+                        <span className="text-sm text-gray-600">Pilih Gambar</span>
+                        <input
+                          type="file"
+                          id={`destination-image-${index}`}
+                          accept="image/*"
+                          onChange={(e) => handleDestinationImageChange(index, e)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   </div>
                 </div>
               </div>
