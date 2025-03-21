@@ -47,43 +47,45 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
           </div>
           <div className="flex-1 overflow-y-auto bg-gray-50/80">
             <div className="grid grid-cols-2 gap-2 p-2">
-              {stations.map((station) => (
-                <button
-                  key={station.id}
-                  onClick={() => handleStationClick(station)}
-                  className={`
-                    w-full text-left p-2 rounded-lg transition-all duration-200
-                    hover:shadow-md hover:scale-[1.02] active:scale-[0.98]
-                    relative overflow-hidden group
-                    ${
-                      selectedStation === station.id
-                        ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg"
-                        : "bg-white hover:bg-white/80 text-gray-900"
-                    }
-                  `}
-                >
-                  <div className="flex items-start gap-2">
-                    <div
-                      className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0
-                      ${selectedStation === station.id ? "bg-white" : "bg-red-600"}`}
-                    />
-                    <div className="flex-1">
-                      <h3
-                        className={`font-semibold text-sm
-                        ${selectedStation === station.id ? "text-white" : "text-navy-900"}`}
-                      >
-                        {station.name.replace("St ", "Stasiun ")}
-                      </h3>
-                      <span
-                        className={`text-xs mt-0.5 inline-block
-                        ${selectedStation === station.id ? "text-white/80" : "text-gray-600"}`}
-                      >
-                        {station.location}
-                      </span>
+              {stations
+                .sort((a, b) => a.id - b.id)
+                .map((station) => (
+                  <button
+                    key={station.id}
+                    onClick={() => handleStationClick(station)}
+                    className={`
+                      w-full text-left p-2 rounded-lg transition-all duration-200
+                      hover:shadow-md hover:scale-[1.02] active:scale-[0.98]
+                      relative overflow-hidden group
+                      ${
+                        selectedStation === station.id
+                          ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg"
+                          : "bg-white hover:bg-white/80 text-gray-900"
+                      }
+                    `}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div
+                        className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0
+                        ${selectedStation === station.id ? "bg-white" : "bg-red-600"}`}
+                      />
+                      <div className="flex-1">
+                        <h3
+                          className={`font-semibold text-sm
+                          ${selectedStation === station.id ? "text-white" : "text-navy-900"}`}
+                        >
+                          {station.name.replace("St ", "Stasiun ")}
+                        </h3>
+                        <span
+                          className={`text-xs mt-0.5 inline-block
+                          ${selectedStation === station.id ? "text-white/80" : "text-gray-600"}`}
+                        >
+                          {station.location}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                ))}
             </div>
           </div>
         </div>

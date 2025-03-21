@@ -331,66 +331,21 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Data Stasiun */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Data Stasiun</h2>
-          
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Stasiun
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                Lokasi
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                required
-                placeholder="Contoh: Jakarta Timur"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Deskripsi
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none min-h-[100px]"
-                placeholder="Masukkan deskripsi stasiun"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Data Stasiun */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Data Stasiun</h2>
+            
+            <div className="space-y-4">
               <div>
-                <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
-                  Latitude
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Stasiun
                 </label>
                 <input
                   type="text"
-                  id="latitude"
-                  name="latitude"
-                  value={formData.latitude}
+                  id="name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
                   required
@@ -398,138 +353,165 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
               </div>
 
               <div>
-                <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
-                  Longitude
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                  Lokasi
                 </label>
                 <input
                   type="text"
-                  id="longitude"
-                  name="longitude"
-                  value={formData.longitude}
+                  id="location"
+                  name="location"
+                  value={formData.location}
                   onChange={handleChange}
                   className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
                   required
+                  placeholder="Contoh: Jakarta Timur"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Gambar Stasiun
-              </label>
-              <div className="space-y-2">
-                {(imagePreview || formData.imageUrl) && (
-                  <div className="relative w-full h-48">
-                    <Image
-                      src={imagePreview || formData.imageUrl || ""}
-                      alt="Preview"
-                      fill
-                      className="object-cover rounded-lg"
-                    />
-                  </div>
-                )}
-                <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                  <Upload className="h-5 w-5 text-gray-500" />
-                  <span className="text-sm text-gray-600">Pilih Gambar</span>
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                  Deskripsi
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none min-h-[100px]"
+                  placeholder="Masukkan deskripsi stasiun"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="latitude" className="block text-sm font-medium text-gray-700 mb-1">
+                    Latitude
+                  </label>
                   <input
-                    type="file"
-                    id="station-image"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
+                    type="text"
+                    id="latitude"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                    required
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="longitude" className="block text-sm font-medium text-gray-700 mb-1">
+                    Longitude
+                  </label>
+                  <input
+                    type="text"
+                    id="longitude"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleChange}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gambar Stasiun
                 </label>
+                <div className="space-y-2">
+                  {(imagePreview || formData.imageUrl) && (
+                    <div className="relative w-full h-48">
+                      <Image
+                        src={imagePreview || formData.imageUrl || ""}
+                        alt="Preview"
+                        fill
+                        className="object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                  <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
+                    <Upload className="h-5 w-5 text-gray-500" />
+                    <span className="text-sm text-gray-600">Pilih Gambar</span>
+                    <input
+                      type="file"
+                      id="station-image"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Destinasi */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">Destinasi Terdekat</h2>
-            <button
-              type="button"
-              onClick={handleAddDestination}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Destinasi
-            </button>
-          </div>
+          {/* Destinasi */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Destinasi Terdekat</h2>
+              <button
+                type="button"
+                onClick={handleAddDestination}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Destinasi
+              </button>
+            </div>
 
-          <div className="space-y-6">
-            {destinations.map((destination, index) => (
-              <div key={index} className="relative bg-gray-50 rounded-lg p-4">
-                <button
-                  type="button"
-                  onClick={() => handleRemoveDestination(index)}
-                  className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-600"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+              {destinations.map((destination, index) => (
+                <div key={index} className="p-4 border rounded-md bg-gray-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-medium text-gray-900">Destinasi {index + 1}</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDestination(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Nama Destinasi
-                    </label>
+                  <div className="space-y-3">
                     <input
                       type="text"
+                      placeholder="Nama Destinasi"
                       value={destination.name}
                       onChange={(e) => handleDestinationChange(index, "name", e.target.value)}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                      className="w-full p-2 text-sm border rounded-md"
                       required
                     />
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Deskripsi Destinasi
-                    </label>
                     <textarea
+                      placeholder="Deskripsi Destinasi"
                       value={destination.description || ""}
                       onChange={(e) => handleDestinationChange(index, "description", e.target.value)}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none min-h-[100px]"
-                      placeholder="Masukkan deskripsi destinasi"
+                      className="w-full p-2 text-sm border rounded-md h-20"
                     />
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Latitude
-                      </label>
+                    <div className="grid grid-cols-2 gap-2">
                       <input
                         type="text"
+                        placeholder="Latitude"
                         value={destination.latitude}
                         onChange={(e) => handleDestinationChange(index, "latitude", e.target.value)}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                        className="w-full p-2 text-sm border rounded-md"
+                        required
+                      />
+                      <input
+                        type="text"
+                        placeholder="Longitude"
+                        value={destination.longitude}
+                        onChange={(e) => handleDestinationChange(index, "longitude", e.target.value)}
+                        className="w-full p-2 text-sm border rounded-md"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Longitude
-                      </label>
-                      <input
-                        type="text"
-                        value={destination.longitude}
-                        onChange={(e) => handleDestinationChange(index, "longitude", e.target.value)}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Gambar Destinasi
-                    </label>
-                    <div className="space-y-2">
                       {(destinationPreviews[index] || destination.imageUrl) && (
-                        <div className="relative w-full h-48">
+                        <div className="relative w-full h-32 mb-2">
                           <Image
                             src={destinationPreviews[index] || destination.imageUrl || ""}
                             alt="Preview"
@@ -538,9 +520,9 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
                           />
                         </div>
                       )}
-                      <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 transition-colors">
-                        <Upload className="h-5 w-5 text-gray-500" />
-                        <span className="text-sm text-gray-600">Pilih Gambar</span>
+                      <label className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50 text-sm">
+                        <Upload className="h-4 w-4 text-gray-500" />
+                        <span className="text-gray-600">Pilih Gambar</span>
                         <input
                           type="file"
                           id={`destination-image-${index}`}
@@ -552,16 +534,16 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
 
-            {destinations.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                <p>Belum ada destinasi terdekat</p>
-                <p className="text-sm">Klik tombol "Tambah Destinasi" untuk menambahkan</p>
-              </div>
-            )}
+              {destinations.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <MapPin className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                  <p>Belum ada destinasi terdekat</p>
+                  <p className="text-sm">Klik tombol "Tambah Destinasi" untuk menambahkan</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -19,6 +19,7 @@ interface Station {
   latitude: number
   longitude: number
   imageUrl?: string
+  location?: string
   destinations: Destination[]
 }
 
@@ -27,11 +28,20 @@ export default function StationsPage() {
   const [stations, setStations] = useState<Station[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
 
   useEffect(() => {
     fetchStations()
   }, [])
+
+  const filteredStations = stations.filter((station) => {
+    const searchLower = searchQuery.toLowerCase()
+    return (
+      station.name.toLowerCase().includes(searchLower) ||
+      (station.location || "").toLowerCase().includes(searchLower)
+    )
+  })
 
   const fetchStations = async () => {
     try {
@@ -125,12 +135,15 @@ export default function StationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">Stasiun</h1>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-gray-900">Stasiun</h1>
+          <p className="text-sm text-gray-500">Kelola data stasiun LRT</p>
+        </div>
         <Link
           href="/admin/stations/add"
-          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
         >
           <Plus className="h-5 w-5" />
           Tambah Stasiun
@@ -138,65 +151,101 @@ export default function StationsPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md text-sm">
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stations.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            Belum ada stasiun
-          </div>
-        ) : (
-          stations.map((station) => (
-            <div
-              key={station.id}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
-            >
-              <div className="aspect-video bg-gray-100 relative">
-                {station.imageUrl ? (
-                  <img
-                    src={station.imageUrl}
-                    alt={station.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    <MapPin className="h-12 w-12" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {station.name}
-                </h3>
-                
-                <div className="space-y-1 mb-4 text-sm text-gray-600">
-                  <p>Latitude: {station.latitude}</p>
-                  <p>Longitude: {station.longitude}</p>
-                  <p>Jumlah Destinasi: {station.destinations.length}</p>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Link
-                    href={`/admin/stations/edit/${station.id}`}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Link>
-                  <button
-                    onClick={() => setShowDeleteConfirm(station.id)}
-                    className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-4">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari stasiun berdasarkan nama atau lokasi..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-          ))
-        )}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-y border-gray-200">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stasiun</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lokasi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Koordinat</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destinasi</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredStations.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                    {searchQuery ? "Tidak ada stasiun yang ditemukan" : "Belum ada stasiun"}
+                  </td>
+                </tr>
+              ) : (
+                filteredStations
+                  .sort((a, b) => a.id - b.id)
+                  .map((station) => (
+                    <tr key={station.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 text-sm text-gray-500">{station.id}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                            {station.imageUrl ? (
+                              <img
+                                src={station.imageUrl}
+                                alt={station.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center">
+                                <MapPin className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">Stasiun LRT {station.name}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">{station.location || "Jakarta Selatan"}</td>
+                      <td className="px-4 py-4 text-sm text-gray-500">
+                        {station.latitude}, {station.longitude}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-500">{station.destinations.length}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/admin/stations/edit/${station.id}`}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={() => setShowDeleteConfirm(station.id)}
+                            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showDeleteConfirm && (
