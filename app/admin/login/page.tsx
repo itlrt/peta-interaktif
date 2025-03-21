@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import Image from 'next/image'
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, Lock, User } from "lucide-react"
 
@@ -74,7 +75,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg">
         <div className="text-center mb-8">
-          <img
+          <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO-LRT-sjqURYP5YQquhOaJ2hXr9JTrH0hFC2.png"
             alt="Logo LRT Jabodebek"
             className="h-16 mx-auto mb-4"

@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, Circle, Polyline } from
 import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import Sidebar from "./sidebar"
-import DestinationSidebar from "./destination-sidebar-new"
+import DestinationSidebar from "./destination-sidebar"
 import { MapPin, Train, Navigation, TrainFront, Landmark } from "lucide-react"
 import { renderToString } from "react-dom/server"
 import { ScrollArea } from "@/components/ui/scroll-area"

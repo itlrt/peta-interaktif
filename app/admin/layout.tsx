@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import Image from 'next/image'
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { LayoutDashboard, Map, LogOut, Settings, Users, ChevronDown, Shield } from "lucide-react"
@@ -79,12 +80,15 @@ export default function AdminLayout({
       <div className="w-64 bg-white border-r border-gray-200">
         {/* Logo and title */}
         <div className="flex items-center p-4 border-b border-gray-200">
-          <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO-LRT-sjqURYP5YQquhOaJ2hXr9JTrH0hFC2.png"
-            alt="Logo LRT Jabodebek"
-            className="h-8 object-contain"
-          />
-          <h1 className="ml-2 text-lg font-bold text-gray-800">Admin Panel</h1>
+          <div className="relative w-48 h-16">
+            <Image
+              src="/logo-lrt-merah.png"
+              alt="Logo LRT Jabodebek"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
         </div>
 
         {/* Navigation */}
@@ -193,7 +197,7 @@ export default function AdminLayout({
         {/* Header */}
         <header className="bg-white border-b border-gray-200">
           <div className="flex justify-between items-center px-6 py-4">
-            <h2 className="text-xl font-semibold text-gray-800">CMS LRT Jabodebek</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Panel Admin LRT Jabodebek</h2>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">{user?.name || 'Admin'}</span>
               <div className="h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center">

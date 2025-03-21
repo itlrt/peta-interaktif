@@ -128,11 +128,13 @@ export async function PATCH(
     })
 
     // Catat aktivitas update
-    await logActivity(
-      auth.user.id,
-      'USER_UPDATED',
-      `Data pengguna ${updatedUser.name} (${updatedUser.username}) telah diperbarui`
-    )
+    if (auth?.user?.id) {
+      await logActivity(
+        auth.user.id,
+        'USER_UPDATED',
+        `Data pengguna ${updatedUser.name} (${updatedUser.username}) telah diperbarui`
+      )
+    }
 
     return NextResponse.json(updatedUser)
   } catch (error) {
@@ -179,11 +181,13 @@ export async function DELETE(
     })
 
     // Catat aktivitas penghapusan
-    await logActivity(
-      auth.user.id,
-      'USER_DELETED',
-      `Pengguna ${user.name} (${user.username}) telah dihapus`
-    )
+    if (auth?.user?.id) {
+      await logActivity(
+        auth.user.id,
+        'USER_DELETED',
+        `Pengguna ${user.name} (${user.username}) telah dihapus`
+      )
+    }
 
     return NextResponse.json({ message: "User berhasil dihapus" })
   } catch (error) {

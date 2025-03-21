@@ -92,11 +92,13 @@ export async function POST(request: Request) {
     })
 
     // Catat aktivitas dengan user yang sedang login sebagai pembuat aktivitas
-    await logActivity(
-      auth.user.id,
-      'USER_CREATED',
-      `Pengguna baru ${user.name} (${user.username}) telah dibuat dengan role ${user.role}`
-    )
+    if (auth?.user?.id) {
+      await logActivity(
+        auth.user.id,
+        'USER_CREATED',
+        `Pengguna baru ${user.name} (${user.username}) telah dibuat dengan role ${user.role}`
+      )
+    }
 
     return NextResponse.json(user)
   } catch (error) {
