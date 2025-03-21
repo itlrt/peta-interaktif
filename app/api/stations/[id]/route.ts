@@ -50,7 +50,7 @@ export async function PATCH(
 
     const stationId = parseInt(params.id)
     const body = await request.json()
-    const { name, latitude, longitude, imageUrl, destinations } = body
+    const { name, latitude, longitude, imageUrl, destinations, description, location } = body
 
     // Validasi input
     if (!name || !latitude || !longitude) {
@@ -112,12 +112,15 @@ export async function PATCH(
           latitude,
           longitude,
           ...(imageUrl ? { imageUrl } : {}),
+          ...(description ? { description } : {}),
+          ...(location ? { location } : {}),
           destinations: {
             create: destinations?.map((dest: any) => ({
               name: dest.name,
               latitude: dest.latitude,
               longitude: dest.longitude,
               ...(dest.imageUrl ? { imageUrl: dest.imageUrl } : {}),
+              ...(dest.description ? { description: dest.description } : {}),
             })) || [],
           },
         },

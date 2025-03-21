@@ -27,7 +27,7 @@ async function main() {
       location: 'Jakarta Pusat',
       latitude: -6.200696,
       longitude: 106.822872,
-      image: 'https://example.com/dukuh-atas.jpg',
+      imageUrl: 'https://example.com/dukuh-atas.jpg',
       destinations: {
         create: [
           {
@@ -35,14 +35,14 @@ async function main() {
             description: 'Pusat perbelanjaan mewah',
             latitude: -6.193265,
             longitude: 106.823273,
-            image: 'https://example.com/plaza-indonesia.jpg',
+            imageUrl: 'https://example.com/plaza-indonesia.jpg',
           },
           {
             name: 'Bundaran HI',
             description: 'Landmark Jakarta',
             latitude: -6.195196,
             longitude: 106.823229,
-            image: 'https://example.com/bundaran-hi.jpg',
+            imageUrl: 'https://example.com/bundaran-hi.jpg',
           },
         ],
       },

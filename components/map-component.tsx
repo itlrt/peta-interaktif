@@ -41,6 +41,7 @@ export interface Destination {
   distance?: number // jarak dalam meter
   duration?: number // durasi dalam detik
   image?: string // URL gambar destinasi
+  description?: string
 }
 
 // Type for station data
@@ -60,14 +61,15 @@ function transformStationData(cmsStation: any): Station {
     id: cmsStation.id,
     name: cmsStation.name,
     position: [cmsStation.latitude, cmsStation.longitude] as [number, number],
-    description: cmsStation.description || `Stasiun LRT ${cmsStation.name}`,
-    location: cmsStation.location || "Jakarta",
+    description: cmsStation.description || "",
+    location: cmsStation.location || "",
     image: cmsStation.imageUrl || "/placeholder.svg?height=80&width=80",
     destinations: cmsStation.destinations?.map((dest: any) => ({
       id: dest.id,
       name: dest.name,
       position: [dest.latitude, dest.longitude] as [number, number],
-      image: dest.imageUrl || "/placeholder.svg?height=80&width=80"
+      image: dest.imageUrl || "/placeholder.svg?height=80&width=80",
+      description: dest.description || ""
     })) || []
   }
 }
@@ -103,42 +105,47 @@ const StationPopup = ({
   station: Station
 }) => {
   return (
-    <div className="p-2 text-center min-w-[200px]">
-      {/* Gambar Stasiun */}
-      <div className="w-full h-36 bg-gray-100 rounded-lg mb-3 overflow-hidden">
-        {station.image ? (
-          <Image 
-            src={station.image} 
-            alt={station.name}
-            width={400}
-            height={200}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-            <TrainFront className="w-12 h-12 text-gray-400" />
-          </div>
-        )}
-      </div>
-
-      {/* Informasi Stasiun */}
-      <div className="space-y-2">
-        <div>
-          <p className="text-xs font-semibold text-red-600 tracking-wider mb-1">STASIUN LRT</p>
-          <h3 className="text-lg font-bold text-gray-900">{station.name.toUpperCase()}</h3>
-          {/* <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
-            <MapPin className="w-4 h-4 flex-shrink-0" />
-            {station.location}
-          </p> */}
+    <div className="p-2 min-w-[280px]">
+      {/* Header - Gambar dan Info Stasiun */}
+      <div className="flex items-start gap-3">
+        {/* Gambar Stasiun */}
+        <div className="w-28 h-28 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+          {station.image ? (
+            <Image 
+              src={station.image} 
+              alt={station.name}
+              width={112}
+              height={112}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-200">
+              <TrainFront className="w-8 h-8 text-gray-400" />
+            </div>
+          )}
         </div>
 
-        {/* Deskripsi */}
-        {/* {station.description && (
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-sm text-gray-700 leading-relaxed">{station.description}</p>
+        {/* Informasi Stasiun */}
+        <div className="flex-1 py-1">
+          <div className="bg-red-600 text-white text-[10px] font-semibold tracking-wider px-2 py-0.5 rounded inline-block mb-1">
+            STASIUN LRT
           </div>
-        )} */}
+          <h3 className="text-base font-bold text-gray-900 leading-tight mb-1">{station.name.toUpperCase()}</h3>
+          {station.location && (
+            <p className="text-xs text-gray-600 flex items-center gap-1">
+              <MapPin className="w-3 h-3 flex-shrink-0" />
+              {station.location}
+            </p>
+          )}
+        </div>
       </div>
+
+      {/* Deskripsi */}
+      {station.description && (
+        <div className="mt-2 pt-2 border-t border-gray-100">
+          <p className="text-xs text-gray-700 leading-relaxed">{station.description}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -230,17 +237,24 @@ function MarkerManager({
           <Popup>
             <div className="p-2 text-center min-w-[200px]">
               <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
-                {destination.image && (
+                {destination.image ? (
                   <Image 
                     src={destination.image} 
                     alt={destination.name}
-                    width={200}
+                    width={160}
                     height={96}
                     className="w-full h-full object-cover"
                   />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Landmark className="w-6 h-6 text-gray-400" />
+                  </div>
                 )}
               </div>
-              <h3 className="font-semibold text-sm">{destination.name}</h3>
+              <h3 className="font-semibold text-sm mb-1">{destination.name}</h3>
+              {destination.description && (
+                <p className="text-xs text-gray-600 leading-relaxed">{destination.description}</p>
+              )}
             </div>
           </Popup>
         </Marker>

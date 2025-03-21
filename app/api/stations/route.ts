@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, latitude, longitude, imageUrl, destinations } = body
+    const { name, latitude, longitude, imageUrl, destinations, description, location } = body
 
     // Validasi input
     if (!name || latitude === undefined || longitude === undefined) {
@@ -100,12 +100,15 @@ export async function POST(request: Request) {
         latitude: lat,
         longitude: lng,
         ...(imageUrl ? { imageUrl } : {}),
+        ...(description ? { description } : {}),
+        ...(location ? { location } : {}),
         destinations: {
           create: destinations?.map((dest: any) => ({
             name: dest.name,
             latitude: Number(dest.latitude),
             longitude: Number(dest.longitude),
             ...(dest.imageUrl ? { imageUrl: dest.imageUrl } : {}),
+            ...(dest.description ? { description: dest.description } : {}),
           })) || [],
         },
       },

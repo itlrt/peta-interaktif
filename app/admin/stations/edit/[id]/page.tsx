@@ -13,6 +13,7 @@ interface Destination {
   longitude: number | string
   imageUrl?: string
   imageFile?: File
+  description?: string
 }
 
 interface Station {
@@ -22,6 +23,8 @@ interface Station {
   longitude: number
   imageUrl?: string
   destinations: Destination[]
+  description?: string
+  location?: string
 }
 
 export default function EditStationPage({ params }: { params: { id: string } }) {
@@ -31,6 +34,8 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
     latitude: "",
     longitude: "",
     imageUrl: "",
+    description: "",
+    location: "",
   })
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [error, setError] = useState("")
@@ -65,6 +70,8 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
           latitude: station.latitude.toString(),
           longitude: station.longitude.toString(),
           imageUrl: station.imageUrl || "",
+          description: station.description || "",
+          location: station.location || "",
         })
 
         setDestinations(
@@ -75,6 +82,7 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
             longitude: dest.longitude,
             imageUrl: dest.imageUrl || "",
             imageFile: dest.imageFile,
+            description: dest.description || "",
           }))
         )
 
@@ -105,6 +113,7 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
         longitude: 0,
         imageUrl: "",
         imageFile: undefined,
+        description: "",
       },
     ])
   }
@@ -261,11 +270,15 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
           latitude,
           longitude,
           imageUrl: stationImageUrl,
+          description: formData.description,
+          location: formData.location,
           destinations: destinationsWithImages.map(dest => ({
+            id: dest.id,
             name: dest.name,
             latitude: Number(dest.latitude),
             longitude: Number(dest.longitude),
-            imageUrl: dest.imageUrl
+            imageUrl: dest.imageUrl,
+            description: dest.description
           }))
         }),
       })
@@ -335,6 +348,36 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
                 onChange={handleChange}
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
                 required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                Lokasi
+              </label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
+                required
+                placeholder="Contoh: Jakarta Timur"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Deskripsi
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none min-h-[100px]"
+                placeholder="Masukkan deskripsi stasiun"
               />
             </div>
 
@@ -437,6 +480,18 @@ export default function EditStationPage({ params }: { params: { id: string } }) 
                       onChange={(e) => handleDestinationChange(index, "name", e.target.value)}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
                       required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Deskripsi Destinasi
+                    </label>
+                    <textarea
+                      value={destination.description || ""}
+                      onChange={(e) => handleDestinationChange(index, "description", e.target.value)}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none min-h-[100px]"
+                      placeholder="Masukkan deskripsi destinasi"
                     />
                   </div>
 

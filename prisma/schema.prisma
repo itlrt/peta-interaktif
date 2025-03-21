@@ -17,6 +17,8 @@ datasource db {
 model Station {
   id          Int           @id @default(autoincrement())
   name        String        @unique
+  description String?
+  location    String?
   latitude    Float
   longitude   Float
   imageUrl    String?
@@ -29,6 +31,7 @@ model Station {
 model Destination {
   id          Int      @id @default(autoincrement())
   name        String   
+  description String?
   latitude    Float
   longitude   Float
   imageUrl    String?
