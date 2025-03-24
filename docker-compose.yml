@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   app:
     build:
@@ -11,6 +9,31 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/peta-interaktif-lrt
       - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    depends_on:
+      - db
     volumes:
       - ./public:/app/public
+      - ./prisma:/app/prisma
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "5438:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=peta-interaktif-lrt
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
