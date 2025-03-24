@@ -150,7 +150,7 @@ export default function AdminDashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900">{activity.message}</p>
                     <p className="text-xs text-gray-500 mt-1">
-                      oleh Administrator •{' '}
+                      oleh {activity.user.name} •{' '}
                       {formatDistanceToNow(new Date(activity.createdAt), {
                         addSuffix: true,
                         locale: id,
