@@ -8,7 +8,7 @@ export default function SettingsPage() {
 
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold mb-4">Kelola Sistem</h2>
-        <p className="text-gray-600 mb-6">Kelola pengaturan sistem, pengguna, dan hak akses untuk CMS LRT Jabodebek.</p>
+        <p className="text-gray-600 mb-6">Kelola pengaturan sistem, pengguna, dan hak akses untuk CMS LRT JABODEBEK.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link

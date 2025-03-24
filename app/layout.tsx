@@ -3,8 +3,8 @@ import "./globals.css"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Peta Interaktif LRT Jabodebek",
-  description: "Peta interaktif untuk jalur LRT Jabodebek dengan stasiun-stasiun utama",
+  title: "Peta Interaktif LRT JABODEBEK",
+  description: "Peta interaktif untuk jalur LRT JABODEBEK dengan stasiun-stasiun utama",
 }
 
 export default function RootLayout({

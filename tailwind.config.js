@@ -47,11 +47,11 @@ module.exports = {
 
         //Preserving original colors
         "primary-lrt": {
-          DEFAULT: "#E30613", // Red color from LRT Jabodebek logo
+          DEFAULT: "#E30613", // Red color from LRT JABODEBEK logo
           foreground: "#FFFFFF",
         },
         "secondary-lrt": {
-          DEFAULT: "#000000", // Black color from LRT Jabodebek logo
+          DEFAULT: "#000000", // Black color from LRT JABODEBEK logo
           foreground: "#FFFFFF",
         },
         // Custom colors for LRT theme

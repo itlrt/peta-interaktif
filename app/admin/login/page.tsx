@@ -75,12 +75,16 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="max-w-md w-full p-8 bg-white rounded-lg shadow-lg">
         <div className="text-center mb-8">
-          <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/LOGO-LRT-sjqURYP5YQquhOaJ2hXr9JTrH0hFC2.png"
-            alt="Logo LRT Jabodebek"
-            className="h-16 mx-auto mb-4"
-          />
-          <p className="text-gray-600">Masuk untuk mengelola data Peta LRT Jabodebek</p>
+          <div className="relative w-48 h-16 mx-auto mb-4">
+            <Image
+              src="/logo-lrt-merah.png"
+              alt="Logo LRT"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <p className="text-gray-600">Masuk untuk mengelola data Peta LRT</p>
         </div>
 
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">{error}</div>}

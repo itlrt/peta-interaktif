@@ -83,7 +83,7 @@ export default function AdminLayout({
           <div className="relative w-48 h-16">
             <Image
               src="/logo-lrt-merah.png"
-              alt="Logo LRT Jabodebek"
+              alt="Logo LRT JABODEBEK"
               fill
               className="object-contain"
               priority
@@ -197,7 +197,7 @@ export default function AdminLayout({
         {/* Header */}
         <header className="bg-white border-b border-gray-200">
           <div className="flex justify-between items-center px-6 py-4">
-            <h2 className="text-xl font-semibold text-gray-800">Panel Admin LRT Jabodebek</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Panel Admin LRT JABODEBEK</h2>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">{user?.name || 'Admin'}</span>
               <div className="h-8 w-8 rounded-full bg-red-600 text-white flex items-center justify-center">
