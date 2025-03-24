@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, ArrowLeft } from "lucide-react"
+import { Eye, EyeOff, ArrowLeft, User, Mail, Shield } from "lucide-react"
 import Link from "next/link"
 
 interface User {
   id: number
-  username: string
+  email: string
   name: string
   role: string
 }
@@ -16,13 +16,15 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
     confirmPassword: "",
     name: "",
     role: "",
+    changePassword: false
   })
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -48,11 +50,12 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         const data = await response.json()
         setUser(data)
         setFormData({
-          username: data.username,
+          email: data.email,
           password: "",
           confirmPassword: "",
           name: data.name,
           role: data.role,
+          changePassword: false
         })
       } catch (error) {
         console.error("Error fetching user:", error)
@@ -64,8 +67,13 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   }, [params.id, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target
+    if (type === 'checkbox') {
+      const checkbox = e.target as HTMLInputElement
+      setFormData((prev) => ({ ...prev, [name]: checkbox.checked }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,12 +83,12 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
 
     try {
       // Validasi input
-      if (!formData.username || !formData.name || !formData.role) {
-        throw new Error("Username, nama, dan role harus diisi")
+      if (!formData.email || !formData.name || !formData.role) {
+        throw new Error("Email, nama, dan role harus diisi")
       }
 
       // Validasi password jika diisi
-      if (formData.password && formData.password !== formData.confirmPassword) {
+      if (formData.changePassword && formData.password !== formData.confirmPassword) {
         throw new Error("Password dan konfirmasi password tidak cocok")
       }
 
@@ -98,10 +106,10 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          username: formData.username,
+          email: formData.email,
           name: formData.name,
           role: formData.role,
-          ...(formData.password && { password: formData.password }),
+          ...(formData.changePassword && formData.password && { password: formData.password }),
         }),
       })
 
@@ -132,7 +140,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4">
         <Link
           href="/admin/settings/users"
           className="flex items-center text-sm text-gray-600 hover:text-gray-900"
@@ -140,7 +148,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Kembali
         </Link>
-        <h1 className="text-2xl font-bold text-gray-800">Edit Pengguna</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Edit Pengguna: {user.name}</h1>
       </div>
 
       {error && (
@@ -149,144 +157,184 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
-        <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-            required
-          />
-        </div>
+      <div className="bg-white rounded-lg p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Informasi Pengguna */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-900">
+              <User className="h-5 w-5 text-red-600" />
+              <h2>Data Pengguna</h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nama Lengkap <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-red-600" />
+                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50"
+                    required
+                  />
+                </div>
+              </div>
 
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Nama
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-            required
-          />
-        </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-red-600" />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
 
-        <div>
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-            Role
-          </label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-            required
-          >
-            <option value="">Pilih Role</option>
-            <option value="ADMIN">Admin</option>
-            <option value="OPERATOR">Operator</option>
-            <option value="VIEWER">Viewer</option>
-          </select>
-        </div>
+            <div>
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  name="changePassword"
+                  checked={formData.changePassword}
+                  onChange={handleChange}
+                  className="form-checkbox h-4 w-4 text-red-600"
+                />
+                <span className="ml-2 text-sm text-gray-700">Ubah Password</span>
+              </label>
+            </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password Baru (opsional)
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-2 top-1/2 -translate-y-1/2"
+            {formData.changePassword && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                    Password Baru <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1 relative rounded-md">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      id="password"
+                      name="password"
+                      placeholder="Minimal 6 karakter"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="block w-full pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50"
+                      required={formData.changePassword}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                    Konfirmasi Password <span className="text-red-500">*</span>
+                  </label>
+                  <div className="mt-1 relative rounded-md">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      placeholder="Masukkan password yang sama"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="block w-full pr-10 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50"
+                      required={formData.changePassword}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Role dan Status */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 text-lg font-medium text-gray-900">
+              <Shield className="h-5 w-5 text-red-600" />
+              <h2>Hak Akses</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 relative rounded-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Shield className="h-5 w-5 text-red-600" />
+                  </div>
+                  <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50"
+                    required
+                  >
+                    <option value="">Pilih Role</option>
+                    <option value="ADMIN">Admin</option>
+                    <option value="OPERATOR">Operator</option>
+                    <option value="VIEWER">Viewer</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4">
+            <Link
+              href="/admin/settings/users"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5 text-gray-400" />
-              ) : (
-                <Eye className="h-5 w-5 text-gray-400" />
-              )}
+              Batal
+            </Link>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              {isLoading ? "Memproses..." : "Simpan Perubahan"}
             </button>
           </div>
-        </div>
-
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-            Konfirmasi Password Baru
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-red-600 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-4">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`px-4 py-2 rounded-md text-white font-medium 
-              ${isLoading ? "bg-red-400" : "bg-red-600 hover:bg-red-700"} 
-              transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2`}
-          >
-            {isLoading ? (
-              <span className="flex items-center">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Memproses...
-              </span>
-            ) : (
-              "Simpan Perubahan"
-            )}
-          </button>
-
-          <Link
-            href="/admin/settings/users"
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          >
-            Batal
-          </Link>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   )
 }
