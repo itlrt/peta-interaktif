@@ -3,7 +3,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install dependencies untuk build
-RUN apk add --no-cache libc6-compat openssl1.1-compat
+RUN apk add --no-cache libc6-compat openssl-dev
 
 # Install dependencies termasuk 'sharp' untuk image optimization
 COPY package*.json ./
@@ -23,7 +23,7 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Install dependencies yang diperlukan
-RUN apk add --no-cache openssl1.1-compat
+RUN apk add --no-cache openssl-dev
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
