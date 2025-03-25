@@ -4,7 +4,13 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    domains: ['res.cloudinary.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      }
+    ],
+    unoptimized: true, // Untuk menangani GIF animasi
   },
   output: 'standalone',
 }
