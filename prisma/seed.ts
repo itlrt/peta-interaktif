@@ -1,22 +1,8 @@
-import { PrismaClient, UserRole } from '@prisma/client'
-import { hashPassword } from '../lib/auth'
+import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  // Buat user admin default
-  const adminPassword = await hashPassword('admin')
-  await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
-      username: 'admin',
-      password: adminPassword,
-      name: 'Administrator',
-      role: UserRole.ADMIN,
-    },
-  })
-
   // Data stasiun dan destinasi
   const stationsData = [
     {

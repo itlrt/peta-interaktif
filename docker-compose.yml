@@ -1,8 +1,12 @@
+version: '3.8'
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
     restart: unless-stopped
     ports:
       - "5006:3000"
@@ -11,9 +15,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/peta-interaktif?schema=public
       - NODE_ENV=production
+      - JWT_SECRET=your-secret-key
       - NEXT_TELEMETRY_DISABLED=1
-      - NEXTAUTH_URL=http://localhost:5006
-      - NEXTAUTH_SECRET=your-secret-key-here
     depends_on:
       db:
         condition: service_healthy
@@ -25,7 +28,8 @@ services:
       start_period: 40s
     volumes:
       - ./public:/app/public
-      - ./prisma:/app/prisma
+    networks:
+      - app-network
 
   db:
     image: postgres:16-alpine
@@ -43,6 +47,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:

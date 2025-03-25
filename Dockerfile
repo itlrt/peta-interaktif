@@ -2,54 +2,63 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies untuk build
-RUN apk add --no-cache libc6-compat openssl-dev
+# Install OpenSSL
+RUN apk add --no-cache openssl
 
-# Install dependencies termasuk 'sharp' untuk image optimization
+# Copy package files
 COPY package*.json ./
-RUN npm ci
+
+# Install dependencies including devDependencies
+RUN npm install
+
+# Copy prisma schema and generate client
+COPY prisma ./prisma/
+RUN npx prisma generate
+
+# Copy lib directory
+COPY lib ./lib/
 
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Build aplikasi
+# Build application
+ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Stage 2: Runner
+# Production image
 FROM node:18-alpine AS runner
+
 WORKDIR /app
 
-# Install dependencies yang diperlukan
-RUN apk add --no-cache openssl-dev
+# Install required packages
+RUN apk add --no-cache openssl sshpass openssh-client
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Create system user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy build output dari builder
+# Copy necessary files from builder
+COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/tsconfig-paths ./node_modules/tsconfig-paths
+COPY --from=builder /app/node_modules/ts-node ./node_modules/ts-node
+COPY --from=builder /app/node_modules/typescript ./node_modules/typescript
+COPY --from=builder /app/tsconfig.json ./
 
-# Set proper permissions
-RUN chown -R nextjs:nodejs /app
+# Copy package files
+COPY package*.json ./
 
-# Switch ke non-root user
-USER nextjs
+# Install production dependencies and generate Prisma client
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
+RUN npm install --production && \
+    npx prisma generate
+
+# Expose port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Add migration script
-COPY --chmod=755 docker-entrypoint.sh .
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Start the application
+CMD ["node", "server.js"] 
