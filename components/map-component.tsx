@@ -454,16 +454,27 @@ function RoutingControl({
 
   if (isLoading && !prevRouteRef.current.length) {
     return (
-      <div className="absolute top-4 right-4 bg-white p-2 rounded shadow z-50">
-        <p>Mencari rute...</p>
+      <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-50">
+        <div className="flex items-center gap-3">
+          <div className="relative w-8 h-8 bg-red-600 rounded-full p-1">
+            <Image
+              src="/logo-lrt-motion.gif"
+              alt="Loading..."
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <p className="text-sm text-gray-600">Mencari rute...</p>
+        </div>
       </div>
     )
   }
 
   if (error && !displayCoordinates.length) {
     return (
-      <div className="absolute top-4 right-4 bg-white p-2 rounded shadow z-50 text-red-500">
-        <p>Error: {error}</p>
+      <div className="absolute top-4 right-4 bg-white p-3 rounded-lg shadow-lg z-50">
+        <p className="text-sm text-red-500">Error: {error}</p>
       </div>
     )
   }
@@ -659,18 +670,20 @@ export default function MapComponent() {
   // Get the selected station for destination sidebar
   const selectedStation = showDestinations ? stations.find((s: Station) => s.id === showDestinations) : null
 
-  if (!isMounted || loading) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-        <p className="text-xl">{loading ? "Loading stations..." : "Loading map..."}</p>
-      </div>
-    )
-  }
+  if (!isMounted) return null
 
   if (error) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-        <p className="text-xl text-red-500">Error: {error}</p>
+      <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+        <div className="text-center bg-white p-6 rounded-xl shadow-lg max-w-md">
+          <div className="text-red-500 mb-4">
+            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-lg font-medium text-gray-900 mb-2">Gagal memuat data</p>
+          <p className="text-sm text-gray-600">{error}</p>
+        </div>
       </div>
     )
   }

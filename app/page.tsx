@@ -6,10 +6,23 @@ import { ModeToggle } from "@/components/mode-toggle"
 const MapComponent = dynamic(() => import("@/components/map-component"), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full w-full bg-gray-100">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Memuat peta...</p>
+    <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+      <div className="text-center bg-white p-8 rounded-xl shadow-lg">
+        <div className="relative w-40 h-40 mx-auto mb-6 bg-red-600 rounded-full p-6">
+          <Image
+            src="/logo-lrt-motion.gif"
+            alt="Loading..."
+            fill
+            className="object-contain p-2"
+            priority
+          />
+        </div>
+        <p className="text-gray-700 font-semibold text-lg">
+          Memuat Peta LRT JABODEBEK
+        </p>
+        <p className="text-gray-500 text-sm mt-2">
+          Mohon tunggu sebentar...
+        </p>
       </div>
     </div>
   )
