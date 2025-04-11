@@ -177,12 +177,19 @@ function MarkerManager({
   // Effect to handle opening popup when selectedStationId changes
   useEffect(() => {
     if (selectedStationId !== null) {
+      // Tutup semua popup stasiun yang lain
+      Object.entries(markersRef.current).forEach(([id, marker]) => {
+        if (parseInt(id) !== selectedStationId) {
+          marker.closePopup();
+        }
+      });
+      
+      // Buka popup untuk stasiun yang dipilih
       const marker = markersRef.current[selectedStationId]
       if (marker) {
-        // Wait for flyTo animation to complete before opening popup
         setTimeout(() => {
           marker.openPopup()
-        }, 1000) // Adjust timing as needed
+        }, 1000)
       }
     }
   }, [selectedStationId])
@@ -215,7 +222,7 @@ function MarkerManager({
             }
           }}
         >
-          <Popup>
+          <Popup closeOnClick={false} autoClose={false}>
             <StationPopup station={station} />
           </Popup>
         </Marker>
@@ -234,7 +241,7 @@ function MarkerManager({
             }
           }}
         >
-          <Popup>
+          <Popup closeOnClick={false} autoClose={false}>
             <div className="p-2 text-center min-w-[200px]">
               <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
                 {destination.image ? (
