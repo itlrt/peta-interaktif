@@ -689,7 +689,7 @@ export default function MapComponent() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full relative">
       {/* Left Sidebar - Stations */}
       <Sidebar
         stations={stations}
@@ -699,9 +699,7 @@ export default function MapComponent() {
       />
 
       {/* Map Container */}
-      <div
-        className={`flex-1 transition-all duration-300 ${isSidebarOpen ? "pl-0" : "pl-8"} ${isDestSidebarOpen ? "pr-0" : "pr-8"}`}
-      >
+      <div className="flex-1">
         <MapContainer
           center={[-6.2851, 106.8683]}
           zoom={10}
@@ -734,23 +732,25 @@ export default function MapComponent() {
 
       {/* Right Sidebar - Destinations */}
       {selectedStation && (
-        <DestinationSidebar
-          key={`station-${selectedStation.id}`}
-          stationName={selectedStation.name}
-          stationLocation={selectedStation.location}
-          destinations={selectedStation.destinations as Destination[]}
-          onDestinationSelect={handleDestinationSelect}
-          isOpen={isDestSidebarOpen}
-          onToggle={toggleDestSidebar}
-          stationPosition={selectedStation.position}
-          routeInfo={routeInfo}
-          routeStartPoint={routeStartPoint}
-          routeEndPoint={routeEndPoint}
-          onResetRoute={resetRoute}
-          transportMode={transportMode}
-          onTransportModeChange={handleTransportModeChange}
-          formatDuration={formatDuration}
-        />
+        <div className={`absolute top-0 right-0 h-full transition-transform duration-300 z-[1000] ${isDestSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+          <DestinationSidebar
+            key={`station-${selectedStation.id}`}
+            stationName={selectedStation.name}
+            stationLocation={selectedStation.location}
+            destinations={selectedStation.destinations as Destination[]}
+            onDestinationSelect={handleDestinationSelect}
+            isOpen={isDestSidebarOpen}
+            onToggle={toggleDestSidebar}
+            stationPosition={selectedStation.position}
+            routeInfo={routeInfo}
+            routeStartPoint={routeStartPoint}
+            routeEndPoint={routeEndPoint}
+            onResetRoute={resetRoute}
+            transportMode={transportMode}
+            onTransportModeChange={handleTransportModeChange}
+            formatDuration={formatDuration}
+          />
+        </div>
       )}
     </div>
   )
