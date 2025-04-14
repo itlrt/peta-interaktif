@@ -6,10 +6,11 @@ import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import Sidebar from "./sidebar"
 import DestinationSidebar from "./destination-sidebar"
-import { MapPin, Train, Navigation, TrainFront, Landmark } from "lucide-react"
+import { MapPin, Train, Navigation, TrainFront, Landmark, Bus, Car } from "lucide-react"
 import { renderToString } from "react-dom/server"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Image from "next/image"
+import TransportInfo from "./transport-info"
 
 // Fix for default marker icons in Leaflet with Next.js
 const DefaultIcon = L.divIcon({
@@ -53,6 +54,16 @@ interface Station {
   location: string
   image: string
   destinations: Destination[]
+}
+
+// Type for transport data
+interface Transport {
+  id: number
+  name: string
+  type: string
+  icon: string
+  stations: Station[]
+  isAllStation: boolean
 }
 
 // Function to transform CMS data to map format
@@ -528,6 +539,7 @@ export default function MapComponent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const mapRef = useRef<L.Map | null>(null)
+  const [transports, setTransports] = useState<Transport[]>([])
 
   // Fetch stations data from CMS
   useEffect(() => {
@@ -549,6 +561,24 @@ export default function MapComponent() {
     }
 
     fetchStations()
+  }, [])
+
+  // Fetch transports data
+  useEffect(() => {
+    async function fetchTransports() {
+      try {
+        const response = await fetch('/api/transportation')
+        if (!response.ok) {
+          throw new Error('Failed to fetch transports')
+        }
+        const data = await response.json()
+        setTransports(data)
+      } catch (err) {
+        console.error('Error fetching transports:', err)
+      }
+    }
+
+    fetchTransports()
   }, [])
 
   useEffect(() => {
@@ -705,8 +735,8 @@ export default function MapComponent() {
         onToggle={toggleSidebar}
       />
 
-      {/* Map Container */}
-      <div className="flex-1">
+      {/* Map Container with Transport Info */}
+      <div className="flex-1 relative">
         <MapContainer
           center={[-6.2851, 106.8683]}
           zoom={10}
@@ -735,6 +765,12 @@ export default function MapComponent() {
             onRouteCalculated={handleRouteCalculated}
           />
         </MapContainer>
+
+        {/* Transport Info Component */}
+        <TransportInfo 
+          transports={transports}
+          selectedStationId={selectedStationId}
+        />
       </div>
 
       {/* Right Sidebar - Destinations */}

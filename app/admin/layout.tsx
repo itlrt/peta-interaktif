@@ -44,11 +44,15 @@ export default function AdminLayout({
   const pathname = usePathname()
   const { isAuthenticated, isLoading, user } = useAuth()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [stationsOpen, setStationsOpen] = useState(false)
 
   // Automatically open settings submenu if we're on a settings page
   useEffect(() => {
     if (pathname?.includes("/admin/settings")) {
       setSettingsOpen(true)
+    }
+    if (pathname?.includes("/admin/stations")) {
+      setStationsOpen(true)
     }
   }, [pathname])
 
@@ -106,15 +110,52 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
-              <Link
-                href="/admin/stations"
-                className={`flex items-center px-4 py-2 rounded-md ${
-                  pathname?.includes("/admin/stations") ? "bg-red-50 text-red-600" : "text-gray-700 hover:bg-gray-100"
+              <button
+                onClick={() => setStationsOpen(!stationsOpen)}
+                className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${
+                  pathname?.includes("/admin/stations") ? "" : ""
                 }`}
               >
-                <Map className="h-5 w-5 mr-3" />
-                Stasiun
-              </Link>
+                <div className="flex items-center">
+                  <Map className="h-5 w-5 mr-3" />
+                  Stasiun
+                </div>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${stationsOpen ? "transform rotate-180" : ""}`}
+                />
+              </button>
+
+              {/* Stasiun submenu */}
+              {stationsOpen && (
+                <ul className="pl-10 space-y-1">
+                  <li>
+                    <Link
+                      href="/admin/stations"
+                      className={`flex items-center px-4 py-2 rounded-md text-sm ${
+                        pathname === "/admin/stations"
+                          ? "bg-red-50 text-red-600"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Map className="h-4 w-4 mr-2" />
+                      Kelola Stasiun
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/admin/stations/transport"
+                      className={`flex items-center px-4 py-2 rounded-md text-sm ${
+                        pathname === "/admin/stations/transport"
+                          ? "bg-red-50 text-red-600"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Map className="h-4 w-4 mr-2" />
+                      Kelola Transportasi
+                    </Link>
+                  </li>
+                </ul>
+              )}
             </li>
             
             {user?.role === 'ADMIN' && (

@@ -16,16 +16,17 @@ datasource db {
 
 // Model untuk stasiun LRT
 model Station {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique
-  description String?
-  location    String?
-  latitude    Float
-  longitude   Float
-  imageUrl    String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  destinations Destination[]
+  id            Int             @id @default(autoincrement())
+  name          String         @unique
+  description   String?
+  location      String?
+  latitude      Float
+  longitude     Float
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  destinations  Destination[]
+  transportation Transportation[] @relation("StationTransportation")
 }
 
 // Model untuk destinasi di sekitar stasiun
@@ -70,4 +71,17 @@ model Activity {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model Transportation {
+  id          Int       @id @default(autoincrement())
+  name        String
+  type        String
+  icon        String    @db.Text
+  stations    Station[] @relation("StationTransportation")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  isAllStation Boolean  @default(false)
+
+  @@unique([name, type])
 }
