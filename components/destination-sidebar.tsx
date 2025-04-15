@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
-import { MapPin, Navigation, ChevronLeft, ChevronRight } from "lucide-react"
+import { MapPin, Navigation, ChevronLeft, ChevronRight, Train } from "lucide-react"
 import { Destination } from "./map-component"
 import Image from "next/image"
 
@@ -406,36 +406,61 @@ export default function DestinationSidebar({
             
             <div className="bg-white rounded-lg p-4 shadow-md mb-4">
               {routeStartPoint ? (
-                <div className="flex items-start mb-3">
+                <div className="flex items-start mb-4 pb-4 border-b border-gray-100">
                   <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mr-3">
-                    <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                    <Train className="w-4 h-4 text-red-600" />
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Titik Awal</p>
-                    <p className="text-base font-semibold">Stasiun {stationName}</p>
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 font-medium mb-1">Titik Awal</p>
+                    <p className="text-base font-semibold text-gray-900 mb-1">Stasiun {stationName}</p>
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <MapPin className="w-3 h-3 flex-shrink-0" />
+                      <p className="line-clamp-1">{stationLocation}</p>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-base mb-2 text-gray-400">Titik Awal: Belum dipilih</p>
+                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100 text-gray-400">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Train className="w-4 h-4" />
+                  </div>
+                  <p className="text-sm">Titik Awal: Pilih stasiun</p>
+                </div>
               )}
               
               {routeEndPoint ? (
                 <div className="flex items-start">
-                  <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mr-3">
-                    <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mr-3">
+                    <Navigation className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">Titik Akhir</p>
-                    <p className="text-base font-semibold">{
-                      destinationsWithRoute.find(d => 
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 font-medium mb-1">Titik Akhir</p>
+                    {(() => {
+                      const selectedDestination = destinationsWithRoute.find(d => 
                         d.position[0] === routeEndPoint[0] && 
                         d.position[1] === routeEndPoint[1]
-                      )?.name || 'Destinasi'
-                    }</p>
+                      );
+                      return (
+                        <>
+                          <p className="text-base font-semibold text-gray-900 mb-1">{selectedDestination?.name || 'Destinasi'}</p>
+                          {selectedDestination?.description && (
+                            <div className="flex items-center gap-1 text-xs text-gray-600">
+                              <MapPin className="w-3 h-3 flex-shrink-0" />
+                              <p className="line-clamp-1">{selectedDestination.description}</p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               ) : (
-                <p className="text-base mb-2 text-gray-400">Titik Akhir: Belum dipilih</p>
+                <div className="flex items-center gap-3 text-gray-400">
+                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Navigation className="w-4 h-4" />
+                  </div>
+                  <p className="text-sm">Titik Akhir: Pilih destinasi dari daftar</p>
+                </div>
               )}
             </div>
             
