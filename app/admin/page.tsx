@@ -161,7 +161,7 @@ export default function AdminDashboard() {
           <div className="p-6">
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-6">
               <Bus className="h-5 w-5 text-gray-600" />
-              Ringkasan Transportasi
+              Jenis Transportasi
             </h2>
             
             {transports.length === 0 ? (
@@ -170,34 +170,32 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <ScrollArea className="h-[400px] w-full">
-                <div className="space-y-4 pr-4">
+                <div className="grid grid-cols-2 gap-4 pr-4">
                   {transports.map((transport) => (
-                    <div key={transport.id} className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex-shrink-0 mr-4">
-                        <div className="relative w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
+                    <div key={transport.id} className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="relative w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
                           <Image
                             src={transport.icon}
                             alt={transport.name}
                             fill
-                            className="object-contain p-1"
+                            className="object-contain p-1.5"
                           />
                         </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 line-clamp-1">{transport.name}</p>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
+                            transport.isAllStation ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {transport.type}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{transport.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {transport.isAllStation 
-                            ? "Tersedia di semua stasiun" 
-                            : `${transport.stations.length} stasiun terhubung`}
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          transport.isAllStation ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {transport.type}
-                        </span>
-                      </div>
+                      <p className="text-xs text-gray-500 mt-auto">
+                        {transport.isAllStation 
+                          ? "Tersedia di semua stasiun" 
+                          : `${transport.stations.length} stasiun terhubung`}
+                      </p>
                     </div>
                   ))}
                 </div>
