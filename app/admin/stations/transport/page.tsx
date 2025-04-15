@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { Trash2, Plus, Upload, Pencil, X } from "lucide-react"
 import Image from "next/image"
-import toast from 'react-hot-toast'
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 
 interface Station {
   id: number
@@ -45,6 +46,8 @@ export default function TransportPage() {
   const [editTransport, setEditTransport] = useState<EditTransportForm | null>(null)
   const [editPreviewIcon, setEditPreviewIcon] = useState<string | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [transportToDelete, setTransportToDelete] = useState<Transport | null>(null)
 
   // Fetch data transportasi dan stasiun saat komponen dimount
   useEffect(() => {
@@ -108,40 +111,30 @@ export default function TransportPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!newTransport.icon) {
-      toast.error("Mohon upload icon transportasi", {
-        icon: '🖼️',
-      })
-      return
-    }
-
-    if (!newTransport.isAllStation && newTransport.stationIds.length === 0) {
-      toast.error("Mohon pilih minimal satu stasiun", {
-        icon: '🚉',
-      })
-      return
-    }
-
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/transportation', {
-        method: 'POST',
+      if (!newTransport.name || !newTransport.type || (!newTransport.isAllStation && newTransport.stationIds.length === 0)) {
+        toast.error("Semua field harus diisi!")
+        return
+      }
+
+      const response = await fetch("/api/transportation", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(newTransport),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Gagal menyimpan data')
+        const error = await response.json()
+        throw new Error(error.error)
       }
 
-      await fetchTransports()
-      
+      const data = await response.json()
+      setTransports([...transports, data])
+      setIsLoading(false)
       setNewTransport({
         name: "",
         type: "",
@@ -150,43 +143,38 @@ export default function TransportPage() {
         isAllStation: false
       })
       setPreviewIcon(null)
-
-      toast.success('Data transportasi berhasil ditambahkan', {
-        icon: '🚀',
-      })
+      toast.success("Transportasi berhasil ditambahkan!")
     } catch (error: any) {
-      console.error('Error saving transport:', error)
-      toast.error(error.message || 'Gagal menyimpan data transportasi', {
-        icon: '⚠️',
-      })
+      toast.error(error.message || "Terjadi kesalahan!")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus transportasi ini?')) {
-      return
-    }
+  const handleDelete = async (transport: Transport) => {
+    setTransportToDelete(transport)
+    setIsDeleteModalOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!transportToDelete) return
 
     try {
-      const response = await fetch(`/api/transportation/${id}`, {
-        method: 'DELETE',
+      const response = await fetch(`/api/transportation/${transportToDelete.id}`, {
+        method: "DELETE",
       })
 
       if (!response.ok) {
-        throw new Error('Gagal menghapus data')
+        const error = await response.json()
+        throw new Error(error.error)
       }
 
-      await fetchTransports()
-      toast.success('Data transportasi berhasil dihapus', {
-        icon: '🗑️',
-      })
-    } catch (error) {
-      console.error('Error deleting transport:', error)
-      toast.error('Gagal menghapus data transportasi', {
-        icon: '⚠️',
-      })
+      setTransports(transports.filter(t => t.id !== transportToDelete.id))
+      toast.success("Transportasi berhasil dihapus!")
+      setIsDeleteModalOpen(false)
+      setTransportToDelete(null)
+    } catch (error: any) {
+      toast.error(error.message || "Terjadi kesalahan!")
     }
   }
 
@@ -259,19 +247,15 @@ export default function TransportPage() {
         throw new Error(data.error || 'Gagal mengupdate data')
       }
 
-      await fetchTransports()
+      setTransports(transports.map(t => t.id === editTransport.id ? data : t))
       setIsEditModalOpen(false)
       setEditTransport(null)
       setEditPreviewIcon(null)
 
-      toast.success('Data transportasi berhasil diupdate', {
-        icon: '✨'
-      })
+      toast.success('Data transportasi berhasil diupdate')
     } catch (error: any) {
       console.error('Error updating transport:', error)
-      toast.error(error.message || 'Gagal mengupdate data transportasi', {
-        icon: '⚠️'
-      })
+      toast.error(error.message || 'Gagal mengupdate data transportasi')
     } finally {
       setIsEditLoading(false)
     }
@@ -506,18 +490,18 @@ export default function TransportPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(transport)}
-                          className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                          className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                         >
-                          <Pencil className="w-5 h-5" />
+                          <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(transport.id)}
-                          className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                          onClick={() => handleDelete(transport)}
+                          className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Trash2 className="w-5 h-5" />
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </td>
@@ -697,6 +681,53 @@ export default function TransportPage() {
           </div>
         </div>
       )}
+
+      {/* Tambahkan modal konfirmasi hapus sebelum Toaster */}
+      {isDeleteModalOpen && transportToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h3 className="text-xl font-semibold">Konfirmasi Hapus</h3>
+              <button
+                onClick={() => {
+                  setIsDeleteModalOpen(false)
+                  setTransportToDelete(null)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-gray-700 mb-6">
+                Apakah Anda yakin ingin menghapus transportasi <span className="font-semibold">{transportToDelete.name}</span>? 
+                Tindakan ini tidak dapat dibatalkan.
+              </p>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false)
+                    setTransportToDelete(null)
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Toaster />
     </div>
   )
 } 

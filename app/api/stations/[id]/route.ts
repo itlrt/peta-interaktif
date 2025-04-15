@@ -3,6 +3,15 @@ import { prisma } from "@/lib/prisma"
 import { verifyAuth } from "@/lib/auth"
 import { logActivity } from "@/lib/activity"
 
+interface Destination {
+  id?: number
+  name: string
+  latitude: number
+  longitude: number
+  imageUrl?: string
+  description?: string
+}
+
 // GET /api/stations/[id] - Mendapatkan detail stasiun
 export async function GET(
   request: Request,
@@ -99,13 +108,8 @@ export async function PATCH(
 
     // Update stasiun
     const updatedStation = await prisma.$transaction(async (prisma) => {
-      // Hapus semua destinasi yang ada
-      await prisma.destination.deleteMany({
-        where: { stationId },
-      })
-
-      // Update stasiun dan buat destinasi baru
-      return prisma.station.update({
+      // Update stasiun
+      const updated = await prisma.station.update({
         where: { id: stationId },
         data: {
           name,
@@ -114,20 +118,48 @@ export async function PATCH(
           ...(imageUrl ? { imageUrl } : {}),
           ...(description ? { description } : {}),
           ...(location ? { location } : {}),
-          destinations: {
-            create: destinations?.map((dest: any) => ({
-              name: dest.name,
-              latitude: dest.latitude,
-              longitude: dest.longitude,
-              ...(dest.imageUrl ? { imageUrl: dest.imageUrl } : {}),
-              ...(dest.description ? { description: dest.description } : {}),
-            })) || [],
-          },
         },
         include: {
           destinations: true,
         },
       })
+
+      // Hapus semua destinasi yang ada
+      await prisma.destination.deleteMany({
+        where: { stationId },
+      })
+
+      // Buat ulang semua destinasi
+      if (destinations && destinations.length > 0) {
+        await prisma.destination.createMany({
+          data: destinations.map((dest: any) => {
+            // Hapus id dari data destinasi untuk menghindari konflik
+            const { id, ...destinationData } = dest
+            return {
+              name: destinationData.name,
+              latitude: destinationData.latitude,
+              longitude: destinationData.longitude,
+              ...(destinationData.imageUrl ? { imageUrl: destinationData.imageUrl } : {}),
+              ...(destinationData.description ? { description: destinationData.description } : {}),
+              stationId
+            }
+          })
+        })
+      }
+
+      // Ambil data terbaru
+      const result = await prisma.station.findUnique({
+        where: { id: stationId },
+        include: {
+          destinations: true,
+        },
+      })
+
+      if (!result) {
+        throw new Error('Stasiun tidak ditemukan setelah update')
+      }
+
+      return result
     })
 
     // Catat aktivitas
