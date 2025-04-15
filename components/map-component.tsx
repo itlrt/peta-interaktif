@@ -184,37 +184,56 @@ function MarkerManager({
   const map = useMap()
   const markersRef = useRef<{ [key: number]: L.Marker }>({})
   const destinationMarkersRef = useRef<{ [key: string]: L.Marker }>({})
+  const previousDestinationRef = useRef<string | null>(null)
+  const previousStationRef = useRef<number | null>(null)
 
-  // Effect to handle opening popup when selectedStationId changes
+  // Effect untuk menangani popup stasiun
   useEffect(() => {
     if (selectedStationId !== null) {
-      // Tutup semua popup stasiun yang lain
-      Object.entries(markersRef.current).forEach(([id, marker]) => {
-        if (parseInt(id) !== selectedStationId) {
-          marker.closePopup();
+      // Tutup popup stasiun sebelumnya jika ada
+      if (previousStationRef.current && previousStationRef.current !== selectedStationId) {
+        const prevMarker = markersRef.current[previousStationRef.current]
+        if (prevMarker) {
+          prevMarker.closePopup()
         }
-      });
-      
-      // Buka popup untuk stasiun yang dipilih
+      }
+
+      // Buka popup stasiun yang baru dipilih
       const marker = markersRef.current[selectedStationId]
       if (marker) {
         setTimeout(() => {
           marker.openPopup()
-        }, 1000)
+        }, 100)
       }
+
+      // Simpan ID stasiun saat ini untuk referensi selanjutnya
+      previousStationRef.current = selectedStationId
     }
   }, [selectedStationId])
 
-  // Effect to handle opening popup when a destination is selected
+  // Effect untuk menangani popup destinasi
   useEffect(() => {
     if (selectedDestinationPosition) {
       const key = `${selectedDestinationPosition[0]},${selectedDestinationPosition[1]}`
+      
+      // Tutup popup destinasi sebelumnya jika ada
+      if (previousDestinationRef.current && previousDestinationRef.current !== key) {
+        const prevMarker = destinationMarkersRef.current[previousDestinationRef.current]
+        if (prevMarker) {
+          prevMarker.closePopup()
+        }
+      }
+
+      // Buka popup destinasi yang baru dipilih
       const marker = destinationMarkersRef.current[key]
       if (marker) {
         setTimeout(() => {
           marker.openPopup()
-        }, 1000)
+        }, 100)
       }
+
+      // Simpan key destinasi saat ini untuk referensi selanjutnya
+      previousDestinationRef.current = key
     }
   }, [selectedDestinationPosition])
 
@@ -239,7 +258,6 @@ function MarkerManager({
         </Marker>
       ))}
 
-      {/* Render destination markers if a station is selected */}
       {selectedStation?.destinations.map((destination: Destination, index: number) => (
         <Marker
           key={`dest-${selectedStation.id}-${index}`}

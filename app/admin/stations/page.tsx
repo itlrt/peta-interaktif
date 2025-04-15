@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Plus, Pencil, Trash2, AlertCircle, MapPin } from "lucide-react"
+import { Plus, Pencil, Trash2, AlertCircle, MapPin, X } from "lucide-react"
 
 interface Destination {
   id: number
@@ -30,6 +30,7 @@ export default function StationsPage() {
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false)
 
   useEffect(() => {
     fetchStations()
@@ -73,6 +74,7 @@ export default function StationsPage() {
 
   const handleDelete = async (id: number) => {
     try {
+      setIsDeleteLoading(true)
       const token = localStorage.getItem("token")
       if (!token) {
         router.push("/admin/login")
@@ -95,32 +97,44 @@ export default function StationsPage() {
     } catch (error) {
       console.error("Error deleting station:", error)
       setError("Gagal menghapus stasiun")
+    } finally {
+      setIsDeleteLoading(false)
     }
   }
 
   const DeleteConfirmation = ({ id, onCancel, onConfirm }: { id: number; onCancel: () => void; onConfirm: () => void }) => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
-        <div className="flex items-center mb-4 text-red-600">
-          <AlertCircle className="h-6 w-6 mr-2" />
-          <h3 className="text-lg font-semibold">Konfirmasi Penghapusan</h3>
-        </div>
-        <p className="text-gray-600 mb-6">
-          Apakah Anda yakin ingin menghapus stasiun ini? Semua destinasi terkait juga akan dihapus.
-        </p>
-        <div className="flex justify-end gap-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+        <div className="flex justify-between items-center p-6 border-b">
+          <h3 className="text-xl font-semibold text-gray-900">Konfirmasi Hapus</h3>
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+            className="text-gray-400 hover:text-gray-600"
           >
-            Batal
+            <X className="w-6 h-6" />
           </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-          >
-            Hapus
-          </button>
+        </div>
+
+        <div className="p-6">
+          <p className="text-gray-600 mb-6">
+            Apakah Anda yakin ingin menghapus stasiun ini? Semua destinasi terkait juga akan dihapus. Tindakan ini tidak dapat dibatalkan.
+          </p>
+
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            >
+              Batal
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isDeleteLoading}
+              className={`px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${isDeleteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {isDeleteLoading ? 'Menghapus...' : 'Ya, Hapus'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

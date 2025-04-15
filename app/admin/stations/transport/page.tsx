@@ -46,8 +46,9 @@ export default function TransportPage() {
   const [editTransport, setEditTransport] = useState<EditTransportForm | null>(null)
   const [editPreviewIcon, setEditPreviewIcon] = useState<string | null>(null)
   const [isEditLoading, setIsEditLoading] = useState(false)
+  const [deleteTransportId, setDeleteTransportId] = useState<number | null>(null)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [transportToDelete, setTransportToDelete] = useState<Transport | null>(null)
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false)
 
   // Fetch data transportasi dan stasiun saat komponen dimount
   useEffect(() => {
@@ -151,16 +152,17 @@ export default function TransportPage() {
     }
   }
 
-  const handleDelete = async (transport: Transport) => {
-    setTransportToDelete(transport)
+  const handleDelete = async (id: number) => {
+    setDeleteTransportId(id)
     setIsDeleteModalOpen(true)
   }
 
   const confirmDelete = async () => {
-    if (!transportToDelete) return
+    if (!deleteTransportId) return
+    setIsDeleteLoading(true)
 
     try {
-      const response = await fetch(`/api/transportation/${transportToDelete.id}`, {
+      const response = await fetch(`/api/transportation/${deleteTransportId}`, {
         method: "DELETE",
       })
 
@@ -169,12 +171,14 @@ export default function TransportPage() {
         throw new Error(error.error)
       }
 
-      setTransports(transports.filter(t => t.id !== transportToDelete.id))
+      setTransports(transports.filter(t => t.id !== deleteTransportId))
       toast.success("Transportasi berhasil dihapus!")
       setIsDeleteModalOpen(false)
-      setTransportToDelete(null)
     } catch (error: any) {
       toast.error(error.message || "Terjadi kesalahan!")
+    } finally {
+      setIsDeleteLoading(false)
+      setDeleteTransportId(null)
     }
   }
 
@@ -498,7 +502,7 @@ export default function TransportPage() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(transport)}
+                          onClick={() => handleDelete(transport.id)}
                           className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -682,16 +686,16 @@ export default function TransportPage() {
         </div>
       )}
 
-      {/* Tambahkan modal konfirmasi hapus sebelum Toaster */}
-      {isDeleteModalOpen && transportToDelete && (
+      {/* Modal Delete */}
+      {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-xl font-semibold">Konfirmasi Hapus</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Konfirmasi Hapus</h3>
               <button
                 onClick={() => {
                   setIsDeleteModalOpen(false)
-                  setTransportToDelete(null)
+                  setDeleteTransportId(null)
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -700,26 +704,28 @@ export default function TransportPage() {
             </div>
 
             <div className="p-6">
-              <p className="text-gray-700 mb-6">
-                Apakah Anda yakin ingin menghapus transportasi <span className="font-semibold">{transportToDelete.name}</span>? 
-                Tindakan ini tidak dapat dibatalkan.
+              <p className="text-gray-600 mb-6">
+                Apakah Anda yakin ingin menghapus transportasi ini? Tindakan ini tidak dapat dibatalkan.
               </p>
 
               <div className="flex justify-end space-x-3">
                 <button
+                  type="button"
                   onClick={() => {
                     setIsDeleteModalOpen(false)
-                    setTransportToDelete(null)
+                    setDeleteTransportId(null)
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                 >
                   Batal
                 </button>
                 <button
+                  type="button"
                   onClick={confirmDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  disabled={isDeleteLoading}
+                  className={`px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 ${isDeleteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  Hapus
+                  {isDeleteLoading ? 'Menghapus...' : 'Ya, Hapus'}
                 </button>
               </div>
             </div>
