@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Plus, Pencil, Trash2, AlertCircle, MapPin, X } from "lucide-react"
+import { Plus, Pencil, Trash2, AlertCircle, Navigation, X } from "lucide-react"
 
 interface Destination {
   id: number
@@ -224,7 +224,7 @@ export default function StationsPage() {
                               />
                             ) : (
                               <div className="h-full w-full flex items-center justify-center">
-                                <MapPin className="h-5 w-5 text-gray-400" />
+                                <Navigation className="h-5 w-5 text-gray-400" />
                               </div>
                             )}
                           </div>

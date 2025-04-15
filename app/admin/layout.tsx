@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import Image from 'next/image'
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LayoutDashboard, Map, LogOut, Settings, Users, ChevronDown, Shield } from "lucide-react"
+import { LayoutDashboard, Map, LogOut, Settings, Users, ChevronDown, Shield, Navigation, Bus } from "lucide-react"
 
 // Simple auth check - in a real app, use a proper auth solution
 const useAuth = () => {
@@ -137,7 +137,7 @@ export default function AdminLayout({
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      <Map className="h-4 w-4 mr-2" />
+                      <Navigation className="h-4 w-4 mr-2" />
                       Kelola Stasiun
                     </Link>
                   </li>
@@ -150,7 +150,7 @@ export default function AdminLayout({
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                     >
-                      <Map className="h-4 w-4 mr-2" />
+                      <Bus className="h-4 w-4 mr-2" />
                       Kelola Transportasi
                     </Link>
                   </li>

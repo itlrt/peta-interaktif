@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Trash2, Plus, Upload, Pencil, X } from "lucide-react"
+import { Trash2, Plus, Upload, Pencil, X, Bus } from "lucide-react"
 import Image from "next/image"
 import { Toaster } from "@/components/ui/sonner"
 import { toast } from "sonner"
+import Link from "next/link"
 
 interface Station {
   id: number
@@ -293,137 +294,161 @@ export default function TransportPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold text-gray-900">Transportasi</h1>
+          <p className="text-sm text-gray-500">Kelola data transportasi umum terintegrasi</p>
+        </div>
+        <Link
+          href="/admin/stations/transport/add"
+          className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+        >
+          <Plus className="h-5 w-5" />
+          Tambah Transportasi
+        </Link>
+      </div>
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Tambah Transportasi Baru</h2>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tersedia Pada Stasiun
-            </label>
-            <div className="space-y-4">
-              <button
-                type="button"
-                onClick={() => {
-                  const allStationIds = stations.map(s => s.id)
-                  setNewTransport(prev => ({
-                    ...prev,
-                    stationIds: prev.stationIds.length === stations.length ? [] : allStationIds,
-                    isAllStation: false
-                  }))
-                }}
-                className="text-red-600 hover:text-red-800 text-sm font-medium"
-              >
-                {newTransport.stationIds.length === stations.length ? 'Batalkan semua pilihan' : 'Pilih semua stasiun'}
-              </button>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Grid Kiri - Informasi Transportasi */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nama Transportasi
+              </label>
+              <input
+                type="text"
+                value={newTransport.name}
+                onChange={(e) => setNewTransport({ ...newTransport, name: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                placeholder="Contoh: Bus TransJakarta"
+                required
+              />
+            </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {stations.map((station) => (
-                  <label key={station.id} className="relative flex items-start">
-                    <div className="flex items-center h-5">
-                      <input
-                        type="checkbox"
-                        checked={newTransport.stationIds.includes(station.id)}
-                        onChange={(e) => {
-                          setNewTransport(prev => ({
-                            ...prev,
-                            stationIds: e.target.checked
-                              ? [...prev.stationIds, station.id]
-                              : prev.stationIds.filter(id => id !== station.id),
-                            isAllStation: false
-                          }))
-                        }}
-                        className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tipe Transportasi
+              </label>
+              <input
+                type="text"
+                value={newTransport.type}
+                onChange={(e) => setNewTransport({ ...newTransport, type: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
+                placeholder="Contoh: Bus"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Icon Transportasi
+              </label>
+              <div className="mt-1 flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  {previewIcon ? (
+                    <div className="relative h-12 w-12">
+                      <Image
+                        src={previewIcon}
+                        alt="Preview"
+                        fill
+                        className="object-cover rounded-md"
                       />
                     </div>
-                    <div className="ml-2 text-sm">
-                      <span className="font-medium text-gray-700">{station.name}</span>
+                  ) : (
+                    <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-gray-400" />
                     </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <input
+                    type="file"
+                    onChange={handleIconChange}
+                    accept="image/*"
+                    className="hidden"
+                    id="icon-upload"
+                  />
+                  <label
+                    htmlFor="icon-upload"
+                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    <Upload className="h-5 w-5 mr-2 text-gray-400" />
+                    Upload Icon
                   </label>
-                ))}
+                  <p className="mt-1 text-xs text-gray-500">
+                    PNG, JPG, GIF sampai 1MB
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nama Transportasi
-            </label>
-            <input
-              type="text"
-              value={newTransport.name}
-              onChange={(e) => setNewTransport({ ...newTransport, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-              placeholder="Contoh: Bus TransJakarta"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Tipe Transportasi
-            </label>
-            <input
-              type="text"
-              value={newTransport.type}
-              onChange={(e) => setNewTransport({ ...newTransport, type: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500"
-              placeholder="Contoh: Bus"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Icon Transportasi
-            </label>
-            <div className="mt-1 flex items-center space-x-4">
-              <div className="flex-shrink-0">
-                {previewIcon ? (
-                  <div className="relative h-12 w-12">
-                    <Image
-                      src={previewIcon}
-                      alt="Preview"
-                      fill
-                      className="object-cover rounded-md"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-12 w-12 rounded-md bg-gray-100 flex items-center justify-center">
-                    <Upload className="h-6 w-6 text-gray-400" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-grow">
-                <input
-                  type="file"
-                  onChange={handleIconChange}
-                  accept="image/*"
-                  className="hidden"
-                  id="icon-upload"
-                />
-                <label
-                  htmlFor="icon-upload"
-                  className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  <Upload className="h-5 w-5 mr-2 text-gray-400" />
-                  Upload Icon
+          {/* Grid Kanan - Pilihan Stasiun */}
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Tersedia Pada Stasiun
                 </label>
-                <p className="mt-1 text-xs text-gray-500">
-                  PNG, JPG, GIF sampai 1MB
-                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allStationIds = stations.map(s => s.id)
+                    setNewTransport(prev => ({
+                      ...prev,
+                      stationIds: prev.stationIds.length === stations.length ? [] : allStationIds,
+                      isAllStation: false
+                    }))
+                  }}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                  {newTransport.stationIds.length === stations.length ? 'Batalkan semua pilihan' : 'Pilih semua stasiun'}
+                </button>
+              </div>
+
+              <div className="border rounded-lg p-4 bg-gray-50 max-h-[400px] overflow-y-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {stations.map((station) => (
+                    <label key={station.id} className="relative flex items-center p-2 hover:bg-white rounded-md transition-colors">
+                      <div className="flex items-center h-5">
+                        <input
+                          type="checkbox"
+                          checked={newTransport.stationIds.includes(station.id)}
+                          onChange={(e) => {
+                            setNewTransport(prev => ({
+                              ...prev,
+                              stationIds: e.target.checked
+                                ? [...prev.stationIds, station.id]
+                                : prev.stationIds.filter(id => id !== station.id),
+                              isAllStation: false
+                            }))
+                          }}
+                          className="h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                        />
+                      </div>
+                      <div className="ml-3 text-sm truncate">
+                        <span className="font-medium text-gray-700">{station.name}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`flex items-center justify-center w-full px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            {isLoading ? 'Menyimpan...' : 'Tambah Transportasi'}
-          </button>
+          {/* Tombol Submit - Full Width */}
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`flex items-center justify-center w-full px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              {isLoading ? 'Menyimpan...' : 'Tambah Transportasi'}
+            </button>
+          </div>
         </form>
       </div>
 
