@@ -170,28 +170,28 @@ export default function AdminDashboard() {
               </div>
             ) : (
               <ScrollArea className="h-[400px] w-full">
-                <div className="grid grid-cols-2 gap-4 pr-4">
+                <div className="grid grid-cols-2 gap-3 pr-4">
                   {transports.map((transport) => (
-                    <div key={transport.id} className="flex flex-col p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="relative w-12 h-12 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
+                    <div key={transport.id} className="flex flex-col p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <div className="relative w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden">
                           <Image
                             src={transport.icon}
                             alt={transport.name}
                             fill
-                            className="object-contain p-1.5"
+                            className="object-contain p-1"
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 line-clamp-1">{transport.name}</p>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
+                          <p className="text-xs font-medium text-gray-900 line-clamp-1">{transport.name}</p>
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${
                             transport.isAllStation ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                           }`}>
                             {transport.type}
                           </span>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500 mt-auto">
+                      <p className="text-[10px] text-gray-500 mt-1">
                         {transport.isAllStation 
                           ? "Tersedia di semua stasiun" 
                           : `${transport.stations.length} stasiun terhubung`}

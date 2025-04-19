@@ -2,7 +2,7 @@
 
 import React from "react"
 import type { LatLngExpression } from "leaflet"
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, ChevronDown, ChevronUp } from "lucide-react"
 
 interface Destination {
   name: string
@@ -27,6 +27,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, onToggle }) => {
   const [selectedStation, setSelectedStation] = React.useState<number | null>(null)
+  const [isMinimized, setIsMinimized] = React.useState(false)
 
   const handleStationClick = (station: Station) => {
     setSelectedStation(station.id)
@@ -34,17 +35,34 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
   }
 
   return (
-    <div className="relative h-full">
-      <div
-        className={`bg-white shadow-lg h-full overflow-hidden transition-all duration-300 ${isOpen ? "w-[360px]" : "w-0"}`}
-      >
-        <div className="flex flex-col h-full">
-          <div className="flex justify-between items-center p-4 pr-8 border-b bg-gradient-to-r from-red-600 to-red-700">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+    <div
+      className={`shadow-lg overflow-hidden transition-all duration-300 ${
+        isOpen ? (isMinimized ? "w-[76px]" : "w-[360px]") : "w-0"
+      } h-full`}
+    >
+      <div className="flex flex-col h-full">
+        <div className={`p-4 border-b bg-gradient-to-r from-red-600 to-red-700 ${isMinimized ? "border-none" : ""}`}>
+          <div className="flex justify-between items-center">
+            <h2 className={`text-lg font-bold text-white flex items-center gap-2 ${isMinimized ? "hidden" : ""}`}>
               <MapPin className="h-5 w-5" />
               Stasiun LRT JABODEBEK
             </h2>
+            {isMinimized && (
+              <MapPin className="h-5 w-5 text-white" />
+            )}
+            <button
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors"
+            >
+              {isMinimized ? (
+                <ChevronRight className="h-5 w-5" />
+              ) : (
+                <ChevronLeft className="h-5 w-5" />
+              )}
+            </button>
           </div>
+        </div>
+        {!isMinimized && (
           <div className="flex-1 overflow-y-auto bg-gray-50/80">
             <div className="grid grid-cols-2 gap-2 p-2">
               {stations
@@ -56,11 +74,11 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
                     className={`
                       w-full text-left p-2 rounded-lg transition-all duration-200
                       hover:shadow-md hover:scale-[1.02] active:scale-[0.98]
-                      relative overflow-hidden group
+                      relative overflow-hidden group shadow-sm
                       ${
                         selectedStation === station.id
                           ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg"
-                          : "bg-white hover:bg-white/80 text-gray-900"
+                          : "bg-white hover:bg-white/80 text-gray-900 hover:shadow-md"
                       }
                     `}
                   >
@@ -88,27 +106,8 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
                 ))}
             </div>
           </div>
-        </div>
+        )}
       </div>
-      <button
-        onClick={onToggle}
-        className={`
-          absolute top-1/2 -translate-y-1/2 
-          ${isOpen ? "-right-5" : "-left-0"}
-          bg-white p-2.5 rounded-full shadow-lg transition-all duration-300
-          hover:bg-gray-50 active:bg-gray-100
-          border border-gray-200
-          flex items-center justify-center
-          z-[1000] 
-          focus:outline-none focus:ring-2 focus:ring-red-600
-          transform hover:scale-105 active:scale-95
-        `}
-        aria-label={isOpen ? "Close panel" : "Open panel"}
-      >
-        <div className={`text-red-600 transition-transform ${isOpen ? "" : "rotate-180"}`}>
-          {isOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
-        </div>
-      </button>
     </div>
   )
 }
