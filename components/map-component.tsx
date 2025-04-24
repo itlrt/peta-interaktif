@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css"
 import L from "leaflet"
 import Sidebar from "./sidebar"
 import DestinationSidebar from "./destination-sidebar"
-import { MapPin, Train, Navigation, TrainFront, Landmark, Bus, Car } from "lucide-react"
+import { MapPin, Train, Navigation, TrainFront, Landmark, Bus, Car, Locate } from "lucide-react"
 import { renderToString } from "react-dom/server"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Image from "next/image"
@@ -32,6 +32,20 @@ const DestinationIcon = L.divIcon({
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
+})
+
+// User location marker, ubah warna dari biru menjadi merah
+const UserLocationIcon = L.divIcon({
+  html: renderToString(
+    <div className="relative">
+      <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
+        <div className="w-4 h-4 bg-white rounded-full"></div>
+      </div>
+    </div>
+  ),
+  className: "user-location-icon",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
 })
 
 // Type for nearby destinations
@@ -542,6 +556,22 @@ function RoutingControl({
   )
 }
 
+// Fungsi untuk menghitung jarak antara dua titik koordinat (dalam meter)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3; // Radius bumi dalam meter
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+}
+
 export default function MapComponent() {
   const [isMounted, setIsMounted] = useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -558,6 +588,10 @@ export default function MapComponent() {
   const [error, setError] = useState<string | null>(null)
   const mapRef = useRef<L.Map | null>(null)
   const [transports, setTransports] = useState<Transport[]>([])
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+  const [nearestStationId, setNearestStationId] = useState<number | null>(null)
+  const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
 
   // Fetch stations data from CMS
   useEffect(() => {
@@ -602,6 +636,14 @@ export default function MapComponent() {
   useEffect(() => {
     setIsMounted(true)
   }, [])
+
+  // Tambahkan useEffect untuk meminta lokasi otomatis saat komponen dimuat
+  useEffect(() => {
+    // Minta lokasi otomatis setelah komponen dimuat dan data stasiun tersedia
+    if (isMounted && stations.length > 0 && !userLocation) {
+      getUserLocation();
+    }
+  }, [isMounted, stations, userLocation]);
 
   const handleMapReady = (map: L.Map) => {
     mapRef.current = map
@@ -725,6 +767,86 @@ export default function MapComponent() {
   // Get the selected station for destination sidebar
   const selectedStation = showDestinations ? stations.find((s: Station) => s.id === showDestinations) : null
 
+  // Fungsi untuk mendapatkan lokasi user, hapus fly ke lokasi user karena kita akan langsung ke stasiun terdekat
+  const getUserLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation tidak didukung browser Anda");
+      return;
+    }
+
+    setIsLoadingLocation(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation([latitude, longitude]);
+        setIsLoadingLocation(false);
+        
+        // Cari stasiun terdekat
+        findNearestStation(latitude, longitude);
+      },
+      (error) => {
+        setIsLoadingLocation(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError("Akses lokasi ditolak oleh user");
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError("Informasi lokasi tidak tersedia");
+            break;
+          case error.TIMEOUT:
+            setLocationError("Waktu permintaan lokasi habis");
+            break;
+          default:
+            setLocationError("Terjadi kesalahan saat mendapatkan lokasi");
+            break;
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Fungsi untuk menemukan stasiun terdekat dari lokasi user
+  const findNearestStation = (latitude: number, longitude: number) => {
+    if (stations.length === 0) return;
+
+    let minDistance = Infinity;
+    let closestStationId: number | null = null;
+
+    stations.forEach(station => {
+      const distance = calculateDistance(
+        latitude, 
+        longitude, 
+        station.position[0], 
+        station.position[1]
+      );
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestStationId = station.id;
+      }
+    });
+
+    setNearestStationId(closestStationId);
+    
+    // Jika ditemukan stasiun terdekat, pilih stasiun tersebut
+    if (closestStationId !== null) {
+      const nearestStation = stations.find(s => s.id === closestStationId);
+      if (nearestStation) {
+        // Jarak dengan stasiun terdekat (untuk debugging)
+        console.log(`Stasiun terdekat: ${nearestStation.name} (${minDistance.toFixed(0)}m)`);
+        
+        // Gunakan handleStationSelect agar pengalaman konsisten dengan pemilihan manual
+        handleStationSelect(nearestStation.position, nearestStation.id);
+      }
+    }
+  };
+
   if (!isMounted) return null
 
   if (error) {
@@ -751,6 +873,8 @@ export default function MapComponent() {
         onStationSelect={(position: L.LatLngExpression, stationId: number) => handleStationSelect(position, stationId)}
         isOpen={isSidebarOpen}
         onToggle={toggleSidebar}
+        nearestStationId={nearestStationId}
+        selectedStationId={selectedStationId}
       />
 
       {/* Map Container with Transport Info */}
@@ -775,6 +899,17 @@ export default function MapComponent() {
             selectedDestinationPosition={selectedDestinationPosition}
           />
           
+          {/* User location marker */}
+          {userLocation && (
+            <Marker position={userLocation} icon={UserLocationIcon}>
+              <Popup>
+                <div className="p-2 text-center">
+                  <p className="font-medium">Lokasi Anda</p>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+          
           {/* Routing component */}
           <RoutingControl 
             startPoint={routeStartPoint} 
@@ -783,6 +918,22 @@ export default function MapComponent() {
             onRouteCalculated={handleRouteCalculated}
           />
         </MapContainer>
+
+        {/* Location button */}
+        <button
+          onClick={getUserLocation}
+          className={`absolute top-4 left-4 z-[1000] p-2.5 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all ${isLoadingLocation ? 'animate-pulse' : ''}`}
+          title="Perbarui lokasi saya"
+        >
+          <Locate size={22} className={isLoadingLocation ? 'text-red-500' : 'text-gray-700'} />
+        </button>
+
+        {/* Location error message */}
+        {locationError && (
+          <div className="absolute top-16 left-4 z-[1000] bg-white p-2 rounded-lg shadow-md max-w-[250px] text-sm text-red-500">
+            {locationError}
+          </div>
+        )}
 
         {/* Transport Info Component */}
         <TransportInfo 

@@ -2,7 +2,7 @@
 
 import React from "react"
 import type { LatLngExpression } from "leaflet"
-import { ChevronLeft, ChevronRight, MapPin, ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronLeft, ChevronRight, MapPin, ChevronDown, ChevronUp, MapPinned } from "lucide-react"
 
 interface Destination {
   name: string
@@ -23,14 +23,27 @@ interface SidebarProps {
   onStationSelect: (position: LatLngExpression, stationId: number) => void
   isOpen: boolean
   onToggle: () => void
+  nearestStationId?: number | null
+  selectedStationId?: number | null
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, onToggle }) => {
-  const [selectedStation, setSelectedStation] = React.useState<number | null>(null)
+const Sidebar: React.FC<SidebarProps> = ({ 
+  stations, 
+  onStationSelect, 
+  isOpen, 
+  onToggle, 
+  nearestStationId,
+  selectedStationId: externalSelectedStationId 
+}) => {
+  // Local state sebagai fallback jika tidak ada selectedStationId yang diberikan dari parent
+  const [localSelectedStation, setLocalSelectedStation] = React.useState<number | null>(null)
   const [isMinimized, setIsMinimized] = React.useState(false)
+  
+  // Gunakan selectedStationId dari props jika ada, jika tidak gunakan state lokal
+  const selectedStation = externalSelectedStationId !== undefined ? externalSelectedStationId : localSelectedStation
 
   const handleStationClick = (station: Station) => {
-    setSelectedStation(station.id)
+    setLocalSelectedStation(station.id)
     onStationSelect(station.position, station.id)
   }
 
@@ -100,6 +113,15 @@ const Sidebar: React.FC<SidebarProps> = ({ stations, onStationSelect, isOpen, on
                         >
                           {station.location}
                         </span>
+                        
+                        {/* You are here badge */}
+                        {nearestStationId === station.id && (
+                          <div className={`mt-1 flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 w-fit
+                            ${selectedStation === station.id ? "bg-white/20 text-white" : "bg-red-100 text-red-700"}`}>
+                            <MapPinned size={12} />
+                            <span>You are here</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </button>
