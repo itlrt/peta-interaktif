@@ -25,6 +25,7 @@ interface SidebarProps {
   onToggle: () => void
   nearestStationId?: number | null
   selectedStationId?: number | null
+  geolocationCompleted?: boolean
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -33,7 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   isOpen, 
   onToggle, 
   nearestStationId,
-  selectedStationId: externalSelectedStationId 
+  selectedStationId: externalSelectedStationId,
+  geolocationCompleted = false
 }) => {
   // Local state sebagai fallback jika tidak ada selectedStationId yang diberikan dari parent
   const [localSelectedStation, setLocalSelectedStation] = React.useState<number | null>(null)
@@ -41,6 +43,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   
   // Gunakan selectedStationId dari props jika ada, jika tidak gunakan state lokal
   const selectedStation = externalSelectedStationId !== undefined ? externalSelectedStationId : localSelectedStation
+
+  // Auto minimize sidebar ketika lokasi terdekat sudah ditemukan (geolocation selesai)
+  // atau ketika pengguna memilih stasiun baru
+  React.useEffect(() => {
+    // Jika geolokasi sudah selesai atau stasiun baru dipilih
+    if ((geolocationCompleted && nearestStationId !== undefined && nearestStationId !== null) || 
+        (externalSelectedStationId !== undefined && externalSelectedStationId !== null && geolocationCompleted)) {
+      // Beri sedikit delay agar pengguna bisa melihat stasiun yang terpilih
+      const timer = setTimeout(() => {
+        setIsMinimized(true);
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [nearestStationId, externalSelectedStationId, geolocationCompleted]);
 
   const handleStationClick = (station: Station) => {
     setLocalSelectedStation(station.id)
@@ -51,31 +68,44 @@ const Sidebar: React.FC<SidebarProps> = ({
     <div
       className={`shadow-lg overflow-hidden transition-all duration-300 ${
         isOpen ? (isMinimized ? "w-[76px]" : "w-[360px]") : "w-0"
-      } h-full`}
+      } h-full relative`}
     >
-      <div className="flex flex-col h-full">
-        <div className={`p-4 border-b bg-gradient-to-r from-red-600 to-red-700 ${isMinimized ? "border-none" : ""}`}>
-          <div className="flex justify-between items-center">
-            <h2 className={`text-lg font-bold text-white flex items-center gap-2 ${isMinimized ? "hidden" : ""}`}>
-              <MapPin className="h-5 w-5" />
-              Stasiun LRT JABODEBEK
-            </h2>
-            {isMinimized && (
-              <MapPin className="h-5 w-5 text-white" />
-            )}
+      {isMinimized ? (
+        // Layout untuk mode minimized dengan tombol di tengah
+        <div className="flex flex-col h-full bg-white">
+          {/* Area atas tombol */}
+          <div className="flex-1" />
+          
+          {/* Tombol toggle di tengah */}
+          <div className="absolute inset-0 flex items-center justify-center">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors"
+              className="p-2 rounded-full bg-red-600 hover:bg-red-700 text-white transition-colors shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              {isMinimized ? (
-                <ChevronRight className="h-5 w-5" />
-              ) : (
-                <ChevronLeft className="h-5 w-5" />
-              )}
+              <ChevronRight className="h-5 w-5" />
             </button>
           </div>
+          
+          {/* Area bawah tombol */}
+          <div className="flex-1" />
         </div>
-        {!isMinimized && (
+      ) : (
+        // Layout normal
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b bg-gradient-to-r from-red-600 to-red-700">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                Stasiun LRT JABODEBEK
+              </h2>
+              <button
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="p-1.5 rounded-full hover:bg-white/20 text-white transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
           <div className="flex-1 overflow-y-auto bg-gray-50/80">
             <div className="grid grid-cols-2 gap-2 p-2">
               {stations
@@ -128,8 +158,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                 ))}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -243,6 +243,10 @@ function MarkerManager({
       if (marker) {
         setTimeout(() => {
           marker.openPopup()
+          // Tutup popup setelah 1.5 detik
+          setTimeout(() => {
+            marker.closePopup()
+          }, 1500)
         }, 100)
       }
 
@@ -266,7 +270,7 @@ function MarkerManager({
             }
           }}
         >
-          <Popup closeOnClick={false} autoClose={false}>
+          <Popup closeOnClick={true} autoClose={true}>
             <StationPopup station={station} />
           </Popup>
         </Marker>
@@ -284,7 +288,7 @@ function MarkerManager({
             }
           }}
         >
-          <Popup closeOnClick={false} autoClose={false}>
+          <Popup closeOnClick={true} autoClose={true}>
             <div className="p-2 text-center min-w-[200px]">
               <div className="w-full h-24 bg-gray-200 rounded-lg mb-2 overflow-hidden">
                 {destination.image ? (
@@ -592,6 +596,7 @@ export default function MapComponent() {
   const [nearestStationId, setNearestStationId] = useState<number | null>(null)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
+  const [geolocationCompleted, setGeolocationCompleted] = useState(false)
 
   // Fetch stations data from CMS
   useEffect(() => {
@@ -675,6 +680,11 @@ export default function MapComponent() {
     setRouteStartPoint(position as [number, number])
     console.log("Set new start point:", position);
 
+    // Auto minimize sidebar setelah memilih stasiun baru (setelah sedikit delay)
+    setTimeout(() => {
+      setGeolocationCompleted(true);
+    }, 300);
+
     if (mapRef.current) {
       mapRef.current.flyTo(position, 14, { // Zoom level 14 to show destinations
         duration: 2,
@@ -741,6 +751,9 @@ export default function MapComponent() {
           duration: 1.5
         });
       }
+
+      // Auto minimize sidebar stasiun setelah memilih destinasi
+      setGeolocationCompleted(true);
     } else {
       console.log("No start point available, cannot set end point");
     }
@@ -767,56 +780,98 @@ export default function MapComponent() {
   // Get the selected station for destination sidebar
   const selectedStation = showDestinations ? stations.find((s: Station) => s.id === showDestinations) : null
 
-  // Fungsi untuk mendapatkan lokasi user, hapus fly ke lokasi user karena kita akan langsung ke stasiun terdekat
+  // Fungsi untuk mendapatkan lokasi user
   const getUserLocation = () => {
     if (!navigator.geolocation) {
       setLocationError("Geolocation tidak didukung browser Anda");
       return;
     }
 
+    // Reset state geolocationCompleted sebelum memulai proses geolokasi baru
+    setGeolocationCompleted(false);
     setIsLoadingLocation(true);
     setLocationError(null);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setUserLocation([latitude, longitude]);
+    // Opsi geolokasi yang lebih ketat
+    const options = {
+      enableHighAccuracy: true, // Gunakan GPS jika tersedia
+      timeout: 30000,          // Timeout 30 detik
+      maximumAge: 0,           // Selalu minta posisi baru
+    };
+
+    // Fungsi success handler yang lebih detail
+    const successHandler = (position: GeolocationPosition) => {
+      const { latitude, longitude, accuracy } = position.coords;
+      
+      // Log untuk debugging
+      console.log('Akurasi lokasi:', accuracy, 'meter');
+      console.log('Koordinat:', latitude, longitude);
+
+      // Hanya terima lokasi jika akurasi cukup baik (kurang dari 100 meter)
+      if (accuracy > 1000000) {
+        setLocationError(`Akurasi lokasi (${Math.round(accuracy)}m) kurang baik. Mohon coba di area terbuka.`);
         setIsLoadingLocation(false);
-        
-        // Cari stasiun terdekat
-        findNearestStation(latitude, longitude);
-      },
-      (error) => {
-        setIsLoadingLocation(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError("Akses lokasi ditolak oleh user");
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError("Informasi lokasi tidak tersedia");
-            break;
-          case error.TIMEOUT:
-            setLocationError("Waktu permintaan lokasi habis");
-            break;
-          default:
-            setLocationError("Terjadi kesalahan saat mendapatkan lokasi");
-            break;
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        return;
       }
+
+      setUserLocation([latitude, longitude]);
+      setIsLoadingLocation(false);
+      
+      // Cari stasiun terdekat
+      findNearestStation(latitude, longitude);
+      
+      // Tandai bahwa geolokasi telah selesai
+      setGeolocationCompleted(true);
+    };
+
+    // Error handler yang lebih informatif
+    const errorHandler = (error: GeolocationPositionError) => {
+      setIsLoadingLocation(false);
+      let errorMessage = "Terjadi kesalahan saat mendapatkan lokasi";
+      
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          errorMessage = "Mohon izinkan akses lokasi di pengaturan browser Anda";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMessage = "Lokasi tidak tersedia. Mohon cek GPS Anda dan coba di area terbuka";
+          break;
+        case error.TIMEOUT:
+          errorMessage = "Waktu mendapatkan lokasi habis. Mohon coba lagi";
+          break;
+      }
+      
+      console.error('Geolocation error:', error);
+      setLocationError(errorMessage);
+    };
+
+    // Mulai watch position untuk mendapatkan update lokasi
+    const watchId = navigator.geolocation.watchPosition(
+      successHandler,
+      errorHandler,
+      options
     );
+
+    // Cleanup: clear watch setelah 30 detik atau ketika berhasil
+    setTimeout(() => {
+      navigator.geolocation.clearWatch(watchId);
+      if (isLoadingLocation) {
+        setIsLoadingLocation(false);
+        setLocationError("Timeout: Tidak dapat mendapatkan lokasi yang akurat. Mohon coba lagi.");
+      }
+    }, 30000);
   };
 
   // Fungsi untuk menemukan stasiun terdekat dari lokasi user
   const findNearestStation = (latitude: number, longitude: number) => {
-    if (stations.length === 0) return;
+    if (stations.length === 0) {
+      console.log("Tidak ada data stasiun tersedia");
+      return;
+    }
 
     let minDistance = Infinity;
     let closestStationId: number | null = null;
+    let closestDistance: number = 0;
 
     stations.forEach(station => {
       const distance = calculateDistance(
@@ -829,17 +884,21 @@ export default function MapComponent() {
       if (distance < minDistance) {
         minDistance = distance;
         closestStationId = station.id;
+        closestDistance = distance;
       }
     });
 
+    // Log jarak ke stasiun terdekat untuk debugging
+    console.log(`Jarak ke stasiun terdekat: ${Math.round(closestDistance)}m`);
+
     setNearestStationId(closestStationId);
     
-    // Jika ditemukan stasiun terdekat, pilih stasiun tersebut
+    // Jika ditemukan stasiun terdekat
     if (closestStationId !== null) {
       const nearestStation = stations.find(s => s.id === closestStationId);
       if (nearestStation) {
-        // Jarak dengan stasiun terdekat (untuk debugging)
-        console.log(`Stasiun terdekat: ${nearestStation.name} (${minDistance.toFixed(0)}m)`);
+        // Tampilkan informasi jarak ke stasiun terdekat
+        console.log(`Stasiun terdekat: ${nearestStation.name} (${Math.round(minDistance)}m)`);
         
         // Gunakan handleStationSelect agar pengalaman konsisten dengan pemilihan manual
         handleStationSelect(nearestStation.position, nearestStation.id);
@@ -875,6 +934,7 @@ export default function MapComponent() {
         onToggle={toggleSidebar}
         nearestStationId={nearestStationId}
         selectedStationId={selectedStationId}
+        geolocationCompleted={geolocationCompleted}
       />
 
       {/* Map Container with Transport Info */}

@@ -442,8 +442,6 @@ export default function DestinationSidebar({
                             <p className="text-base font-semibold text-gray-900 mb-1">{selectedDestination?.name || 'Destinasi'}</p>
                             {selectedDestination?.description && (
                               <div className="flex items-center gap-1 text-xs text-gray-600">
-                                <MapPin className="w-3 h-3 flex-shrink-0" />
-                                <p className="line-clamp-1">{selectedDestination.description}</p>
                               </div>
                             )}
                           </>
