@@ -34,7 +34,7 @@ services:
   db:
     image: postgres:16-alpine
     ports:
-      - "5438:5432"
+      - "6001:5432"  # Ganti port 5438 dengan 5439
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -57,3 +57,4 @@ networks:
 volumes:
   postgres_data:
     name: peta-interaktif-db
+

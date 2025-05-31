@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import Image from 'next/image'
 import Link from "next/link"
@@ -20,7 +19,7 @@ const useAuth = () => {
     const checkAuth = () => {
       const token = localStorage.getItem("token")
       const userData = localStorage.getItem("user")
-      
+
       if (token && userData) {
         setIsAuthenticated(true)
         setUser(JSON.parse(userData))
@@ -113,7 +112,7 @@ export default function AdminLayout({
               <button
                 onClick={() => setStationsOpen(!stationsOpen)}
                 className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${
-                  pathname?.includes("/admin/stations") ? "" : ""
+                  pathname?.includes("/admin/stations") ? "bg-red-50 text-red-600" : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 <div className="flex items-center">
@@ -157,7 +156,7 @@ export default function AdminLayout({
                 </ul>
               )}
             </li>
-            
+
             {user?.role === 'ADMIN' && (
               <>
                 <button
