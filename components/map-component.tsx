@@ -99,6 +99,32 @@ function transformStationData(cmsStation: any): Station {
   }
 }
 
+// Component to handle map resize and ensure proper rendering
+function MapResizeHandler() {
+  const map = useMap()
+
+  useEffect(() => {
+    // Force map to recalculate size after mounting
+    const timer = setTimeout(() => {
+      map.invalidateSize()
+    }, 100)
+
+    // Also invalidate on window resize
+    const handleResize = () => {
+      map.invalidateSize()
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [map])
+
+  return null
+}
+
 // Component to set up map icons
 function SetupMapIcons() {
   useEffect(() => {
@@ -948,9 +974,12 @@ export default function MapComponent() {
           <SetupMapIcons />
           <FitBounds stations={stations} />
           <MapActions onMapReady={handleMapReady} />
+          <MapResizeHandler />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+            minZoom={1}
           />
           <MarkerManager
             stations={stations}
