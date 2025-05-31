@@ -60,6 +60,7 @@ export default function LoginPage() {
       // Simpan token dan data user
       localStorage.setItem("token", data.token)
       localStorage.setItem("user", JSON.stringify(data.user))
+      localStorage.setItem("loginTime", new Date().getTime().toString())
       
       // Force a hard navigation to ensure layout is rerendered
       window.location.href = "/admin"
